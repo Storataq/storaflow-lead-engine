@@ -25,10 +25,10 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "CRM",
     icon: "Kanban",
     children: [
-      { href: "/crm/pipelines", label: "Pipelines", icon: "GitBranch" },
-      { href: "/crm/funnels", label: "Funnels", icon: "Filter" },
+      { href: "/crm", label: "CRM Dashboard", icon: "Gauge" },
       { href: "/crm/leads", label: "Leads", icon: "Users" },
       { href: "/crm/deals", label: "Deals", icon: "Handshake" },
+      { href: "/crm/pipeline", label: "Pipeline", icon: "Kanban" },
       { href: "/crm/tasks", label: "Taken", icon: "CheckSquare" },
       { href: "/crm/notes", label: "Notities", icon: "StickyNote" },
     ],

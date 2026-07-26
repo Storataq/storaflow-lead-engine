@@ -12,10 +12,13 @@ type CrmSubnavProps = {
 
 export function CrmSubnav({ currentPath }: CrmSubnavProps) {
   return (
-    <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
+    <div className="sticky top-14 z-10 mb-6 -mx-1 flex gap-2 overflow-x-auto bg-background/95 px-1 py-2 backdrop-blur supports-backdrop-filter:bg-background/80">
       {crmChildren.map((item) => {
         const active =
-          currentPath === item.href || currentPath.startsWith(`${item.href}/`);
+          item.href === "/crm"
+            ? currentPath === "/crm"
+            : currentPath === item.href ||
+              currentPath.startsWith(`${item.href}/`);
         return (
           <Link
             key={item.href}

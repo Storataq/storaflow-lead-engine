@@ -27,6 +27,7 @@ import {
   formatDealValue,
 } from "@/lib/crm/constants";
 import type {
+  CrmDealRow,
   CrmLeadWithRelations,
   CrmNoteRow,
   CrmPipelineRow,
@@ -49,13 +50,14 @@ type LeadDetailClientProps = {
   tasks: CrmTaskRow[];
   notes: CrmNoteRow[];
   activities: ActivityRow[];
+  deals: CrmDealRow[];
 };
 
 const TABS = [
-  "overzicht",
+  "algemeen",
   "bedrijf",
-  "contactpersonen",
-  "activiteiten",
+  "contacten",
+  "deals",
   "taken",
   "notities",
   "timeline",
@@ -78,9 +80,10 @@ export function LeadDetailClient({
   tasks,
   notes,
   activities,
+  deals,
 }: LeadDetailClientProps) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("overzicht");
+  const [tab, setTab] = useState<Tab>("algemeen");
   const [pending, startTransition] = useTransition();
   const [pipelineId, setPipelineId] = useState(lead.pipeline_id);
   const pipelineStages = stages.filter(
@@ -155,11 +158,11 @@ export function LeadDetailClient({
         ))}
       </div>
 
-      {tab === "overzicht" || tab === "bedrijf" ? (
+      {tab === "algemeen" || tab === "bedrijf" ? (
         <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="text-base">
-              {tab === "bedrijf" ? "Bedrijf" : "Overzicht"}
+              {tab === "bedrijf" ? "Bedrijf" : "Algemeen"}
             </CardTitle>
             <CardDescription>
               Bewerk leadgegevens, pipeline en stage.
@@ -329,10 +332,10 @@ export function LeadDetailClient({
         </Card>
       ) : null}
 
-      {tab === "contactpersonen" ? (
+      {tab === "contacten" ? (
         <Card className="shadow-none">
           <CardHeader>
-            <CardTitle className="text-base">Contactpersonen</CardTitle>
+            <CardTitle className="text-base">Contacten</CardTitle>
             <CardDescription>
               Primaire contactgegevens van deze lead.
             </CardDescription>
@@ -350,6 +353,44 @@ export function LeadDetailClient({
               <span className="text-muted-foreground">Telefoon</span>
               <span>{lead.phone ?? "—"}</span>
             </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {tab === "deals" ? (
+        <Card className="shadow-none">
+          <CardHeader>
+            <CardTitle className="text-base">Deals</CardTitle>
+            <CardDescription>Deals gekoppeld aan deze lead.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {deals.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nog geen deals.{" "}
+                <Link
+                  href="/crm/deals"
+                  className="font-medium underline-offset-4 hover:underline"
+                >
+                  Maak een deal
+                </Link>
+              </p>
+            ) : (
+              deals.map((deal) => (
+                <Link
+                  key={deal.id}
+                  href={`/crm/deals/${deal.id}`}
+                  className="block rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted/40"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-medium">{deal.title}</span>
+                    <Badge variant="secondary">{deal.status}</Badge>
+                  </div>
+                  <p className="mt-1 text-muted-foreground">
+                    {formatDealValue(Number(deal.value), deal.currency)}
+                  </p>
+                </Link>
+              ))
+            )}
           </CardContent>
         </Card>
       ) : null}
@@ -465,14 +506,12 @@ export function LeadDetailClient({
         </div>
       ) : null}
 
-      {tab === "activiteiten" || tab === "timeline" ? (
+      {tab === "timeline" ? (
         <Card className="shadow-none">
           <CardHeader>
-            <CardTitle className="text-base">
-              {tab === "timeline" ? "Timeline" : "Activiteiten"}
-            </CardTitle>
+            <CardTitle className="text-base">Timeline</CardTitle>
             <CardDescription>
-              CRM-gebeurtenissen voor deze lead.
+              Chronologische activiteiten voor deze lead.
             </CardDescription>
           </CardHeader>
           <CardContent>

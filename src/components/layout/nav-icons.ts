@@ -6,6 +6,7 @@ import {
   CheckSquare,
   Download,
   Filter,
+  Gauge,
   GitBranch,
   Handshake,
   Kanban,
@@ -21,6 +22,7 @@ import {
 
 export const navIconMap = {
   LayoutDashboard,
+  Gauge,
   Kanban,
   GitBranch,
   Filter,

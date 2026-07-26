@@ -69,6 +69,19 @@ export function RichNoteEditor({ leadId, onSaved }: RichNoteEditorProps) {
         >
           Lijst
         </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            const url = window.prompt("URL voor link");
+            if (!url) return;
+            document.execCommand("createLink", false, url);
+            editorRef.current?.focus();
+          }}
+        >
+          Link
+        </Button>
       </div>
       <div
         ref={editorRef}

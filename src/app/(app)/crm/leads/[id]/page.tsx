@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import {
   getLead,
   listAllStages,
+  listDeals,
   listLeadActivities,
   listNotes,
   listPipelines,
@@ -34,19 +35,23 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
   const lead = await getLead(orgId, id);
   if (!lead) notFound();
 
-  const [pipelines, stages, tasks, notes, activities] = await Promise.all([
-    listPipelines(orgId),
-    listAllStages(orgId),
-    listTasks(orgId, id),
-    listNotes(orgId, id),
-    listLeadActivities(orgId, id),
-  ]);
+  const [pipelines, stages, tasks, notes, activities, allDeals] =
+    await Promise.all([
+      listPipelines(orgId),
+      listAllStages(orgId),
+      listTasks(orgId, id),
+      listNotes(orgId, id),
+      listLeadActivities(orgId, id),
+      listDeals(orgId),
+    ]);
+
+  const deals = allDeals.filter((deal) => deal.lead_id === id);
 
   return (
     <div>
       <PageHeader
         title={lead.company_name}
-        description="Lead detail met overzicht, taken, notities en timeline."
+        description="Lead detail met algemeen, deals, taken, notities en timeline."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "CRM", href: "/crm" },
@@ -62,6 +67,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
         tasks={tasks}
         notes={notes}
         activities={activities}
+        deals={deals}
       />
     </div>
   );

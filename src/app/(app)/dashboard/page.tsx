@@ -137,7 +137,7 @@ export default async function DashboardPage() {
     },
     {
       label: "Gewonnen deze maand",
-      value: String(crmStats?.wonThisMonth ?? 0),
+      value: String(crmStats?.wonDealsCount ?? 0),
       icon: Trophy,
       href: "/crm/leads",
     },

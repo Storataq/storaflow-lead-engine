@@ -16,10 +16,26 @@ export type CrmLeadWithRelations = CrmLeadRow & {
 
 export type CrmDashboardStats = {
   newLeadsCount: number;
+  openDealsCount: number;
   pipelineValue: number;
-  dealsByStage: { stageId: string; stageName: string; color: string; count: number }[];
+  wonDealsCount: number;
   tasksDueToday: number;
-  wonThisMonth: number;
+  conversionRate: number;
+  leadsThisMonth: number;
+  averageDealValue: number;
+  dealsByStage: { stageId: string; stageName: string; color: string; count: number }[];
+};
+
+export type OrgMemberOption = {
+  userId: string;
+  fullName: string | null;
+  label: string;
+};
+
+export type CrmDealWithRelations = CrmDealRow & {
+  lead: Pick<CrmLeadRow, "id" | "company_name" | "contact_name"> | null;
+  pipeline: Pick<CrmPipelineRow, "id" | "name" | "color"> | null;
+  stage: Pick<CrmStageRow, "id" | "name" | "color"> | null;
 };
 
 async function withCrmReady(organizationId: string) {
@@ -254,6 +270,134 @@ export async function listLeadActivities(
   return data ?? [];
 }
 
+export async function listOrganizationMembers(
+  organizationId: string,
+): Promise<OrgMemberOption[]> {
+  const supabase = await createClient();
+  const { data: members, error } = await supabase
+    .from("organization_members")
+    .select("user_id")
+    .eq("organization_id", organizationId);
+
+  if (error) throw new Error(error.message);
+  const userIds = [...new Set((members ?? []).map((row) => row.user_id))];
+  if (userIds.length === 0) return [];
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("user_id, full_name")
+    .in("user_id", userIds);
+
+  const profileMap = new Map(
+    (profiles ?? []).map((row) => [row.user_id, row.full_name]),
+  );
+
+  return userIds.map((userId) => {
+    const fullName = profileMap.get(userId) ?? null;
+    return {
+      userId,
+      fullName,
+      label: fullName?.trim() || `Gebruiker ${userId.slice(0, 8)}`,
+    };
+  });
+}
+
+export async function getDeal(
+  organizationId: string,
+  dealId: string,
+): Promise<CrmDealWithRelations | null> {
+  const supabase = await withCrmReady(organizationId);
+  const { data, error } = await supabase
+    .from("crm_deals")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("id", dealId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+
+  const [lead, pipeline, stage] = await Promise.all([
+    data.lead_id
+      ? supabase
+          .from("crm_leads")
+          .select("id, company_name, contact_name")
+          .eq("id", data.lead_id)
+          .maybeSingle()
+          .then((result) => result.data)
+      : Promise.resolve(null),
+    supabase
+      .from("crm_pipelines")
+      .select("id, name, color")
+      .eq("id", data.pipeline_id)
+      .maybeSingle()
+      .then((result) => result.data),
+    supabase
+      .from("crm_funnel_stages")
+      .select("id, name, color")
+      .eq("id", data.stage_id)
+      .maybeSingle()
+      .then((result) => result.data),
+  ]);
+
+  return {
+    ...data,
+    lead: lead ?? null,
+    pipeline: pipeline ?? null,
+    stage: stage ?? null,
+  };
+}
+
+export async function listDealsWithRelations(
+  organizationId: string,
+): Promise<CrmDealWithRelations[]> {
+  const deals = await listDeals(organizationId);
+  if (deals.length === 0) return [];
+
+  const supabase = await createClient();
+  const leadIds = [
+    ...new Set(
+      deals
+        .map((deal) => deal.lead_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const pipelineIds = [...new Set(deals.map((deal) => deal.pipeline_id))];
+  const stageIds = [...new Set(deals.map((deal) => deal.stage_id))];
+
+  const [{ data: leads }, { data: pipelines }, { data: stages }] =
+    await Promise.all([
+      leadIds.length
+        ? supabase
+            .from("crm_leads")
+            .select("id, company_name, contact_name")
+            .eq("organization_id", organizationId)
+            .in("id", leadIds)
+        : Promise.resolve({ data: [] }),
+      supabase
+        .from("crm_pipelines")
+        .select("id, name, color")
+        .eq("organization_id", organizationId)
+        .in("id", pipelineIds),
+      supabase
+        .from("crm_funnel_stages")
+        .select("id, name, color")
+        .eq("organization_id", organizationId)
+        .in("id", stageIds),
+    ]);
+
+  const leadMap = new Map((leads ?? []).map((row) => [row.id, row]));
+  const pipelineMap = new Map((pipelines ?? []).map((row) => [row.id, row]));
+  const stageMap = new Map((stages ?? []).map((row) => [row.id, row]));
+
+  return deals.map((deal) => ({
+    ...deal,
+    lead: deal.lead_id ? (leadMap.get(deal.lead_id) ?? null) : null,
+    pipeline: pipelineMap.get(deal.pipeline_id) ?? null,
+    stage: stageMap.get(deal.stage_id) ?? null,
+  }));
+}
+
 export async function getCrmDashboardStats(
   organizationId: string,
 ): Promise<CrmDashboardStats> {
@@ -272,36 +416,56 @@ export async function getCrmDashboardStats(
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
-  const [{ data: leads }, { data: tasks }, { count: wonThisMonth }] =
-    await Promise.all([
-      supabase
-        .from("crm_leads")
-        .select("id, stage_id, deal_value, status, created_at")
-        .eq("organization_id", organizationId)
-        .limit(1000),
-      supabase
-        .from("crm_tasks")
-        .select("id, due_at, status")
-        .eq("organization_id", organizationId)
-        .neq("status", "done")
-        .neq("status", "cancelled")
-        .limit(500),
-      supabase
-        .from("crm_leads")
-        .select("id", { count: "exact", head: true })
-        .eq("organization_id", organizationId)
-        .eq("status", "won")
-        .gte("updated_at", startOfMonth.toISOString()),
-    ]);
+  const [{ data: leads }, { data: deals }, { data: tasks }] = await Promise.all([
+    supabase
+      .from("crm_leads")
+      .select("id, stage_id, deal_value, status, created_at")
+      .eq("organization_id", organizationId)
+      .limit(1000),
+    supabase
+      .from("crm_deals")
+      .select("id, value, status, created_at")
+      .eq("organization_id", organizationId)
+      .limit(1000),
+    supabase
+      .from("crm_tasks")
+      .select("id, due_at, status")
+      .eq("organization_id", organizationId)
+      .neq("status", "done")
+      .neq("status", "cancelled")
+      .limit(500),
+  ]);
 
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const newLeadsCount = (leads ?? []).filter(
     (lead) => new Date(lead.created_at).getTime() >= weekAgo,
   ).length;
 
-  const pipelineValue = (leads ?? [])
-    .filter((lead) => lead.status === "open")
-    .reduce((sum, lead) => sum + Number(lead.deal_value ?? 0), 0);
+  const leadsThisMonth = (leads ?? []).filter(
+    (lead) => new Date(lead.created_at).getTime() >= startOfMonth.getTime(),
+  ).length;
+
+  const openLeads = (leads ?? []).filter((lead) => lead.status === "open");
+  const pipelineValue = openLeads.reduce(
+    (sum, lead) => sum + Number(lead.deal_value ?? 0),
+    0,
+  );
+
+  const openDeals = (deals ?? []).filter((deal) => deal.status === "open");
+  const wonDeals = (deals ?? []).filter((deal) => deal.status === "won");
+  const closedDeals = (deals ?? []).filter(
+    (deal) => deal.status === "won" || deal.status === "lost",
+  );
+  const conversionRate =
+    closedDeals.length === 0
+      ? 0
+      : Math.round((wonDeals.length / closedDeals.length) * 100);
+
+  const averageDealValue =
+    openDeals.length === 0
+      ? 0
+      : openDeals.reduce((sum, deal) => sum + Number(deal.value ?? 0), 0) /
+        openDeals.length;
 
   const dealsByStage = stages.map((stage) => ({
     stageId: stage.id,
@@ -318,9 +482,13 @@ export async function getCrmDashboardStats(
 
   return {
     newLeadsCount,
+    openDealsCount: openDeals.length,
     pipelineValue,
-    dealsByStage,
+    wonDealsCount: wonDeals.length,
     tasksDueToday,
-    wonThisMonth: wonThisMonth ?? 0,
+    conversionRate,
+    leadsThisMonth,
+    averageDealValue,
+    dealsByStage,
   };
 }

@@ -6,7 +6,9 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   listAllStages,
-  listDeals,
+  listDealsWithRelations,
+  listLeads,
+  listOrganizationMembers,
   listPipelines,
 } from "@/lib/crm/queries";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
@@ -20,21 +22,25 @@ export default async function CrmDealsPage() {
   const context = await getActiveOrganization();
   if (!context) return null;
 
-  let deals: Awaited<ReturnType<typeof listDeals>> = [];
+  let deals: Awaited<ReturnType<typeof listDealsWithRelations>> = [];
   let pipelines: Awaited<ReturnType<typeof listPipelines>> = [];
   let stages: Awaited<ReturnType<typeof listAllStages>> = [];
+  let leads: Awaited<ReturnType<typeof listLeads>> = [];
+  let members: Awaited<ReturnType<typeof listOrganizationMembers>> = [];
   let errorMessage: string | null = null;
 
   try {
-    [deals, pipelines, stages] = await Promise.all([
-      listDeals(context.organization.id),
+    [deals, pipelines, stages, leads, members] = await Promise.all([
+      listDealsWithRelations(context.organization.id),
       listPipelines(context.organization.id),
       listAllStages(context.organization.id),
+      listLeads(context.organization.id),
+      listOrganizationMembers(context.organization.id),
     ]);
   } catch (error) {
     errorMessage = toUserFacingError(
       error,
-      "Kon deals niet laden. Voer migratie 000008 uit als tabellen ontbreken.",
+      "Kon deals niet laden. Controleer of migratie 000008 is uitgevoerd.",
     );
   }
 
@@ -42,7 +48,7 @@ export default async function CrmDealsPage() {
     <div>
       <PageHeader
         title="Deals"
-        description="Dealregistratie gekoppeld aan pipelines en stages."
+        description="Dealregistratie met bedrijf, lead, waarde en verwachte sluitdatum."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "CRM", href: "/crm" },
@@ -55,7 +61,13 @@ export default async function CrmDealsPage() {
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       ) : (
-        <DealsManager deals={deals} pipelines={pipelines} stages={stages} />
+        <DealsManager
+          deals={deals}
+          pipelines={pipelines}
+          stages={stages}
+          leads={leads}
+          members={members}
+        />
       )}
     </div>
   );

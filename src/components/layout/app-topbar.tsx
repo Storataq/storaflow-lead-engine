@@ -94,11 +94,13 @@ export function AppTopbar({
                     {item.children?.map((child) => {
                       const ChildIcon = navIconMap[child.icon as NavIconName];
                       const childActive =
-                        pathname === child.href ||
-                        pathname.startsWith(`${child.href}/`);
+                        child.href === item.href
+                          ? pathname === child.href
+                          : pathname === child.href ||
+                            pathname.startsWith(`${child.href}/`);
                       return (
                         <Link
-                          key={child.href}
+                          key={`${child.href}-${child.label}`}
                           href={child.href}
                           className={cn(
                             "ml-4 flex items-center gap-2 rounded-md px-3 py-1.5 text-sm",

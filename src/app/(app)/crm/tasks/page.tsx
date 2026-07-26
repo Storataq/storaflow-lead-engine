@@ -4,7 +4,7 @@ import { CrmSubnav } from "@/components/crm/crm-subnav";
 import { TasksManager } from "@/components/crm/tasks-manager";
 import { PageHeader } from "@/components/layout/page-header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { listTasks } from "@/lib/crm/queries";
+import { listDeals, listLeads, listTasks } from "@/lib/crm/queries";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 import { toUserFacingError } from "@/lib/ui/user-facing-error";
 
@@ -17,13 +17,19 @@ export default async function CrmTasksPage() {
   if (!context) return null;
 
   let tasks: Awaited<ReturnType<typeof listTasks>> = [];
+  let leads: Awaited<ReturnType<typeof listLeads>> = [];
+  let deals: Awaited<ReturnType<typeof listDeals>> = [];
   let errorMessage: string | null = null;
   try {
-    tasks = await listTasks(context.organization.id);
+    [tasks, leads, deals] = await Promise.all([
+      listTasks(context.organization.id),
+      listLeads(context.organization.id),
+      listDeals(context.organization.id),
+    ]);
   } catch (error) {
     errorMessage = toUserFacingError(
       error,
-      "Kon taken niet laden. Voer migratie 000008 uit als tabellen ontbreken.",
+      "Kon taken niet laden. Controleer of migratie 000008 is uitgevoerd.",
     );
   }
 
@@ -31,7 +37,7 @@ export default async function CrmTasksPage() {
     <div>
       <PageHeader
         title="Taken"
-        description="Taken met deadline, prioriteit, status en toewijzing."
+        description="Taken met statusfilters, prioriteit en koppeling aan leads of deals."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "CRM", href: "/crm" },
@@ -44,7 +50,7 @@ export default async function CrmTasksPage() {
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       ) : (
-        <TasksManager tasks={tasks} />
+        <TasksManager tasks={tasks} leads={leads} deals={deals} />
       )}
     </div>
   );

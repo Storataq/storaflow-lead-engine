@@ -57,7 +57,24 @@ export {
   MockConnector,
   createMockConnector,
 } from "@/lib/scraping/connectors/mock";
-export { runConnectorPipeline } from "@/lib/scraping/connectors/pipeline";
+export {
+  runConnectorPipeline,
+  runConnectorPipelineDetailed,
+} from "@/lib/scraping/connectors/pipeline";
+export {
+  enrichWithAiPlaceholder,
+  deduplicateBusinessResults,
+  normalizeBusinessResults,
+  parseSearchHits,
+  parseSearchResults,
+  runProcessingPipeline,
+  validateBusinessResults,
+} from "@/lib/scraping/connectors/pipeline/index";
+export {
+  MockTestService,
+  defaultMockTestService,
+  runMockPipelineTest,
+} from "@/lib/scraping/connectors/mock-test-service";
 export {
   ConnectorError,
   ConnectorNotFoundError,
@@ -68,6 +85,11 @@ export {
   defaultConnectorLogger,
   InMemoryConnectorLogger,
 } from "@/lib/scraping/connectors/logger";
+export type {
+  NormalizedBusinessResult,
+  MockPipelineRunSummary,
+  ValidationIssue,
+} from "@/lib/scraping/connectors/types";
 
 function toLegacyManifest(manifest: NewManifest): ConnectorManifest {
   return {

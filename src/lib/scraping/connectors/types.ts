@@ -3,6 +3,7 @@
  * Legacy job-adapter types remain below for backward compatibility.
  */
 
+import type { ConnectorLogEntry } from "@/lib/scraping/connectors/logger";
 import type { DiscoveredCompany, SearchInput } from "@/lib/scraping/types";
 
 /** Stable connector identifier, e.g. "mock". */
@@ -25,39 +26,94 @@ export type ConnectorSearchInput = {
 };
 
 /**
- * Uniform raw hit before normalize().
+ * Uniform raw hit before parser/normalize().
  */
 export type ConnectorSearchHit = {
+  sourceId?: string;
   name: string;
   website?: string | null;
+  emails?: string[];
+  phones?: string[];
+  /** @deprecated Prefer emails[] */
+  email?: string | null;
+  /** @deprecated Prefer phones[] */
+  phone?: string | null;
+  street?: string | null;
+  postalCode?: string | null;
   city?: string | null;
   region?: string | null;
   country?: string | null;
-  phone?: string | null;
-  email?: string | null;
+  countryCode?: string | null;
+  industry?: string | null;
+  categories?: string[];
+  description?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  confidence?: number;
   sourceUrl: string;
   raw?: Record<string, unknown>;
 };
 
 /**
- * Normalized company-shaped result returned to callers.
+ * Uniform normalized business result used by the processing pipeline.
  */
-export type ConnectorSearchResult = {
-  companyName: string;
+export type NormalizedBusinessResult = {
+  source: string;
+  sourceId: string;
+  name: string;
   website: string | null;
+  emails: string[];
+  phones: string[];
+  street: string | null;
+  postalCode: string | null;
   city: string | null;
   region: string | null;
-  country: string | null;
-  phone: string | null;
-  email: string | null;
-  sourceUrl: string;
-  sourceCode: ConnectorCode;
+  countryCode: string | null;
+  industry: string | null;
+  categories: string[];
+  description: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  confidence: number;
+  rawData: Record<string, unknown>;
 };
+
+/** Alias — connector.search()/normalize() return the uniform model. */
+export type ConnectorSearchResult = NormalizedBusinessResult;
 
 export type ConnectorSearchResponse = {
   connectorCode: ConnectorCode;
   results: ConnectorSearchResult[];
   total: number;
+};
+
+export type ValidationIssue = {
+  sourceId: string;
+  field: string;
+  message: string;
+};
+
+export type ValidationOutcome = {
+  valid: NormalizedBusinessResult[];
+  invalid: NormalizedBusinessResult[];
+  issues: ValidationIssue[];
+};
+
+export type DeduplicationOutcome = {
+  results: NormalizedBusinessResult[];
+  duplicatesRemoved: number;
+};
+
+export type MockPipelineRunSummary = {
+  connectorCode: ConnectorCode;
+  fetchedCount: number;
+  validCount: number;
+  invalidCount: number;
+  duplicatesRemoved: number;
+  results: NormalizedBusinessResult[];
+  runtimeMs: number;
+  logs: ConnectorLogEntry[];
+  issues: ValidationIssue[];
 };
 
 // ---------------------------------------------------------------------------

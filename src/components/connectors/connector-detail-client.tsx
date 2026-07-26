@@ -35,6 +35,7 @@ export function ConnectorDetailClient({ manifest }: ConnectorDetailClientProps) 
   const [lastRun, setLastRun] = useState<ConnectorMockTestResult | null>(null);
 
   function handleMockTest() {
+    if (pending) return;
     startTransition(async () => {
       const result = await runConnectorMockTestAction(manifest.code);
       setLastRun(result);
@@ -48,6 +49,7 @@ export function ConnectorDetailClient({ manifest }: ConnectorDetailClientProps) 
 
   const caps = manifest.capabilities;
   const config = manifest.defaultConfig;
+  const previewResults = lastRun?.results?.slice(0, 10) ?? [];
 
   return (
     <div className="space-y-4">
@@ -56,7 +58,7 @@ export function ConnectorDetailClient({ manifest }: ConnectorDetailClientProps) 
         <Badge variant="outline">{manifest.mode === "mock" ? "Mock" : "Live"}</Badge>
         <Badge variant="outline">{manifest.category}</Badge>
         <Button size="sm" disabled={pending} onClick={handleMockTest}>
-          {pending ? "Running…" : "Run Mock Test"}
+          {pending ? "Bezig…" : "Run Mock Test"}
         </Button>
       </div>
 
@@ -135,7 +137,8 @@ export function ConnectorDetailClient({ manifest }: ConnectorDetailClientProps) 
           <CardHeader>
             <CardTitle className="text-base">Laatste mock-run</CardTitle>
             <CardDescription>
-              10 fictieve bedrijven, lokale pipeline (parser → normalize → …).
+              Search → Factory → Connector → Parser → Normalizer → Validator →
+              Deduplicator → AI placeholder
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -148,12 +151,32 @@ export function ConnectorDetailClient({ manifest }: ConnectorDetailClientProps) 
                 <div className="flex flex-wrap gap-3 text-sm">
                   <span>Status: {lastRun.success ? "OK" : "Failed"}</span>
                   <span>Runtime: {lastRun.runtimeMs ?? 0} ms</span>
-                  <span>Resultaten: {lastRun.results?.length ?? 0}</span>
+                  <span>Opgehaald: {lastRun.fetchedCount ?? 0}</span>
+                  <span>Geldig: {lastRun.validCount ?? 0}</span>
+                  <span>Ongeldig: {lastRun.invalidCount ?? 0}</span>
+                  <span>
+                    Duplicaten verwijderd: {lastRun.duplicatesRemoved ?? 0}
+                  </span>
+                  <span>Uiteindelijk: {lastRun.results?.length ?? 0}</span>
                 </div>
 
                 {lastRun.logs?.length ? (
-                  <ul className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-border p-3 text-sm">
+                  <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-border p-3 text-sm">
                     {lastRun.logs.map((log, index) => (
+                      <li key={`${log.at}-${index}`}>
+                        <span className="font-medium uppercase">{log.level}</span>
+                        <span className="text-muted-foreground">
+                          {" "}
+                          — {log.message}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+
+                {lastRun.legacyLogs?.length ? (
+                  <ul className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-border p-3 text-sm">
+                    {lastRun.legacyLogs.map((log, index) => (
                       <li key={`${log.at}-${index}`}>
                         <span className="font-medium">{log.event}</span>
                         <span className="text-muted-foreground">
@@ -165,35 +188,43 @@ export function ConnectorDetailClient({ manifest }: ConnectorDetailClientProps) 
                   </ul>
                 ) : null}
 
-                {lastRun.results?.length ? (
+                {previewResults.length ? (
                   <div className="overflow-x-auto rounded-lg border border-border">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Bedrijf</TableHead>
-                          <TableHead>Plaats</TableHead>
                           <TableHead>Land</TableHead>
+                          <TableHead>Stad</TableHead>
+                          <TableHead>Branche</TableHead>
                           <TableHead>Website</TableHead>
-                          <TableHead>Score</TableHead>
+                          <TableHead>E-mail</TableHead>
+                          <TableHead>Confidence</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {lastRun.results.map((item) => (
-                          <TableRow key={item.sourceUrl}>
+                        {previewResults.map((item) => (
+                          <TableRow key={`${item.source}-${item.sourceId}`}>
                             <TableCell className="font-medium">
-                              {item.companyName}
+                              {item.name}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {item.countryCode ?? "—"}
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                               {item.city ?? "—"}
                             </TableCell>
                             <TableCell className="text-muted-foreground">
-                              {item.country ?? "—"}
+                              {item.industry ?? "—"}
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                               {item.website ?? "—"}
                             </TableCell>
                             <TableCell className="text-muted-foreground">
-                              {item.score ?? "—"}
+                              {item.emails[0] ?? "—"}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {item.confidence.toFixed(2)}
                             </TableCell>
                           </TableRow>
                         ))}

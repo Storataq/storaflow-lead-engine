@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lead Engine
 
-## Getting Started
+Interne webapp om publieke zakelijke bedrijfs- en contactgegevens te verzamelen op basis van branche, zoekterm, plaats, regio en land.
 
-First, run the development server:
+Dit project is de technische basis voor een latere commerciële uitbreiding. Branding in code blijft voorlopig generiek (`Lead Engine`).
+
+## Status
+
+**Fase 1 (huidig):** authenticatie, organizations, database + RLS, app-shell, lege pagina’s.
+
+**Nog niet gebouwd:** scraper, worker-verwerking, CSV-export, zoekformulieren, deduplicatie-UI.
+
+## Stack
+
+- Next.js (App Router) + TypeScript
+- Tailwind CSS + shadcn/ui
+- Supabase (Auth, PostgreSQL, RLS)
+- Zod + React Hook Form (klaar voor latere formulieren)
+- Aparte worker (volgende fase)
+
+## Repository-analyse (fase 1 start)
+
+De repository was leeg (geen `package.json`, geen git-historie met appcode). Daarom is het Next.js-project vanaf scratch opgezet.
+
+## Lokale installatie
+
+```bash
+npm install
+cp .env.example .env.local
+```
+
+Vul de waarden in `.env.local` in (zie hieronder).
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+App: [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Waar | Beschrijving |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Client + server | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Client + server | Publieke publishable key (RLS van toepassing) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Alleen server/worker | Service role — **nooit** in clientcode |
+| `NEXT_PUBLIC_APP_URL` | App | Basis-URL, bijv. `http://localhost:3000` |
 
-## Learn More
+## Supabase migraties (handmatig)
 
-To learn more about Next.js, take a look at the following resources:
+Voer migraties **niet** automatisch vanuit de app uit. Doe dit handmatig:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Open Supabase Dashboard → SQL Editor
+2. Voer uit in volgorde:
+   - `supabase/migrations/20260726000001_initial_schema.sql`
+   - `supabase/migrations/20260726000002_rls_policies.sql`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Of via CLI (optioneel):
 
-## Deploy on Vercel
+```bash
+npx supabase db push
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Zie ook [docs/database.md](docs/database.md).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Auth (intern)
+
+- Geen publieke registratie in de UI
+- Maak gebruikers aan via Supabase Auth (Dashboard → Authentication → Users)
+- Na eerste login: organisatie aanmaken
+- `organization_id` wordt altijd server-side afgeleid uit lidmaatschap
+
+## Scripts
+
+```bash
+npm run dev      # Next.js development
+npm run build    # Productiebuild
+npm run lint     # ESLint
+npm run start    # Productieserver
+```
+
+Worker-startinstructies volgen in de scraperfase (`npm run worker` is gereserveerd).
+
+## Mappenstructuur (kern)
+
+```
+src/
+  app/                 # Routes (App Router)
+  components/          # UI + layout
+  lib/
+    auth/              # Server actions (login/logout/org)
+    organizations/     # Actieve organisatie (server-side)
+    supabase/          # Clients (browser/server/admin)
+    scraping/          # Interfaces (nog geen implementatie)
+  types/               # Database/types
+supabase/migrations/   # SQL migraties
+docs/                  # Documentatie
+worker/                # Placeholder voor background worker
+```
+
+## Privacy & veiligheid
+
+- Alleen publiek toegankelijke zakelijke informatie
+- Geen CAPTCHA-/login-omzeiling
+- Geen scraping van private IP’s / localhost / non-HTTP(S)
+- RLS op alle organisatiegebonden tabellen
+- Service role alleen op server/worker
+- Respecteer robots.txt, rate limits, blocklists en verwijderverzoeken (scraperfase)
+
+## Roadmap naar Storaflow
+
+1. Zoekopdrachten + scrape jobs + worker
+2. Website crawler + contactextractie
+3. Normalisatie, deduplicatie, uitsluitlijst
+4. Exports (CSV/Excel)
+5. SaaS: registratie, billing, teams, API (later)
+
+Zie [docs/roadmap.md](docs/roadmap.md).

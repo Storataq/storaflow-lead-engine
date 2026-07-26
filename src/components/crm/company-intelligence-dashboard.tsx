@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { CompanyEnrichmentEnginePanel } from "@/components/crm/company-enrichment-engine-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -247,6 +248,12 @@ export function CompanyIntelligenceDashboard({
   return (
     <TooltipProvider>
       <div className="space-y-4">
+        <CompanyEnrichmentEnginePanel
+          lead={lead}
+          enrichment={enrichment}
+          contacts={contacts}
+        />
+
         {/* Company Overview */}
         <Card className="shadow-none">
           <CardHeader className="space-y-3">

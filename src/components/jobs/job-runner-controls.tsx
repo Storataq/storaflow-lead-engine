@@ -108,7 +108,7 @@ export function JobRunnerControls({ jobId, status }: JobRunnerControlsProps) {
     <div className="flex flex-wrap items-center gap-2">
       {isProcessing ? (
         <p className="mr-2 text-sm text-muted-foreground">
-          Queue / MockWorker actief…
+          Mock pipeline actief…
         </p>
       ) : null}
 

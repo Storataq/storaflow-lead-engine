@@ -38,18 +38,36 @@ export function priorityRank(priority: ScrapeJobPriority | string): number {
 }
 
 /**
- * Mock progress milestones (local simulation only).
- * Active → 10% → 35% → 60% → 85% → 100% → Completed
+ * Mock progress milestones (legacy tick worker).
+ * Prefer PIPELINE_PROGRESS for MockConnector job execution.
  */
 export const MOCK_PROGRESS_STEPS = [10, 35, 60, 85, 100] as const;
 
+/**
+ * MockConnector pipeline progress (never decreases).
+ * 0 created → 5 queued → … → 100 completed
+ */
+export const PIPELINE_PROGRESS = {
+  created: 0,
+  queued: 5,
+  connectorInitialized: 10,
+  searchCompleted: 25,
+  normalized: 45,
+  validated: 60,
+  deduplicated: 75,
+  persisting: 90,
+  completed: 100,
+} as const;
+
+export const PIPELINE_STAGE_COUNT = 8;
+
 export const MOCK_COMPANIES_PER_STEP = 2;
-export const MOCK_ENGINE_CLAIM = "mock-worker-v1";
+export const MOCK_ENGINE_CLAIM = "mock-pipeline-v1";
 export const DEFAULT_CONNECTOR_CODE = "mock";
 export const DEFAULT_WORKER_CODE = "mock";
 
-/** @deprecated use MOCK_PROGRESS_STEPS.length */
-export const MOCK_SCRAPE_TARGET_PAGES = MOCK_PROGRESS_STEPS.length;
+/** @deprecated use PIPELINE_STAGE_COUNT */
+export const MOCK_SCRAPE_TARGET_PAGES = PIPELINE_STAGE_COUNT;
 
 export function normalizeJobStatus(
   status: ScrapeJobStatus,
@@ -106,7 +124,7 @@ export function jobPriorityLabel(priority: string | null | undefined): string {
 
 export function jobProgressPercent(
   pagesProcessed: number,
-  targetPages: number = MOCK_PROGRESS_STEPS.length,
+  targetPages: number = PIPELINE_STAGE_COUNT,
   storedPercent?: number | null,
 ): number {
   if (typeof storedPercent === "number" && storedPercent >= 0) {
@@ -115,7 +133,6 @@ export function jobProgressPercent(
   if (targetPages <= 0) return 0;
   return Math.min(100, Math.round((pagesProcessed / targetPages) * 100));
 }
-
 export function formatRuntimeMs(runtimeMs: number | null | undefined): string {
   if (runtimeMs == null || runtimeMs < 0) return "—";
   if (runtimeMs < 1000) return `${runtimeMs} ms`;

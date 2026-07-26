@@ -241,8 +241,8 @@ export default async function ZoekopdrachtDetailPage({
             </CardDescription>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Gebruik “Start scrape” om een Pending → Active → Completed flow te
-            draaien met mock-bedrijven.
+            Gebruik “Start mock scrape” om Queued → Active → Completed te
+            draaien via de MockConnector-pipeline (persistente resultaten).
           </CardContent>
         </Card>
       </div>

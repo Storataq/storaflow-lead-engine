@@ -353,7 +353,7 @@ export function SearchesManager({
                             }}
                           >
                             <Play className="size-4" />
-                            Start scrape
+                            Start mock scrape
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openEdit(item)}>
                             <Pencil className="size-4" />
@@ -408,7 +408,7 @@ export function SearchesManager({
                           void handleStartScrape(item);
                         }}
                       >
-                        Start scrape
+                        Start mock scrape
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEdit(item)}>
                         Bewerken

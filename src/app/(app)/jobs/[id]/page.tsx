@@ -75,7 +75,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     <div>
       <PageHeader
         title={searchName}
-        description="Queue engine + MockWorker — lokale progress-simulatie."
+        description="MockConnector-pipeline met persistente resultaten in de database."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Scrape Jobs", href: "/jobs" },
@@ -109,10 +109,10 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
         <div className="flex flex-wrap items-center gap-3">
           <JobStatusBadge status={job.status} />
           <span className="text-sm text-muted-foreground">
-            Prioriteit: {jobPriorityLabel(job.priority)}
+            Connector: {job.current_source_code ?? "mock"}
           </span>
           <span className="text-sm text-muted-foreground">
-            Bron: {job.current_source_code ?? "—"}
+            Prioriteit: {jobPriorityLabel(job.priority)}
           </span>
           <span className="text-sm text-muted-foreground">
             Retries: {job.retry_count}
@@ -125,7 +125,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Voortgang</CardTitle>
           <CardDescription>
-            Progress {job.progress_percent}% · stap {job.pages_processed}/
+            {job.progress_percent}% · pipeline-stappen {job.pages_processed}/
             {job.pages_total || job.target_pages}
           </CardDescription>
         </CardHeader>
@@ -139,11 +139,17 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card className="shadow-none">
           <CardHeader className="pb-2">
-            <CardDescription>Gevonden</CardDescription>
+            <CardDescription>Bedrijven</CardDescription>
             <CardTitle className="text-2xl">{job.companies_found}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card className="shadow-none">
+          <CardHeader className="pb-2">
+            <CardDescription>Contacten</CardDescription>
+            <CardTitle className="text-2xl">{job.contacts_found}</CardTitle>
           </CardHeader>
         </Card>
         <Card className="shadow-none">
@@ -177,6 +183,14 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Zoekopdracht</span>
+              <span>{searchName}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Connector</span>
+              <span>{job.current_source_code ?? "mock"}</span>
+            </div>
+            <div className="flex justify-between gap-3">
               <span className="text-muted-foreground">Job ID</span>
               <code className="text-xs">{job.id}</code>
             </div>
@@ -208,8 +222,8 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           <CardHeader>
             <CardTitle className="text-base">Timeline / Logs</CardTitle>
             <CardDescription>
-              Job Created → Queued → Worker Assigned → Started → Progress →
-              Completed.
+              Job created → Queued → Started → Connector → Pipeline → Persisted
+              → Completed.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -227,7 +241,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium">{log.event_code}</span>
                       <span className="text-xs text-muted-foreground">
-                        {formatDate(log.created_at)}
+                        {log.level} · {formatDate(log.created_at)}
                       </span>
                     </div>
                     <p className="text-muted-foreground">{log.message}</p>
@@ -245,9 +259,10 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
         <Card className="shadow-none">
           <CardHeader>
-            <CardTitle className="text-base">Resultaten</CardTitle>
+            <CardTitle className="text-base">Opgeslagen resultaten</CardTitle>
             <CardDescription>
-              scrape_results rijen van de connector.
+              Persistente scrape_results uit de database (niet opnieuw
+              gegenereerd).
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -261,7 +276,10 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Bedrijf</TableHead>
-                      <TableHead>Bron</TableHead>
+                      <TableHead>Land</TableHead>
+                      <TableHead>Stad</TableHead>
+                      <TableHead>Branche</TableHead>
+                      <TableHead>Website</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -270,14 +288,18 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                       <TableRow key={result.id}>
                         <TableCell>
                           <p className="font-medium">{result.company_name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {[result.city, result.country]
-                              .filter(Boolean)
-                              .join(", ") || "—"}
-                          </p>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {result.source_code}
+                          {result.country ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {result.city ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {result.industry ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {result.website_url ?? "—"}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {result.status}
@@ -293,9 +315,9 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
         <Card className="shadow-none">
           <CardHeader>
-            <CardTitle className="text-base">Mock bedrijven</CardTitle>
+            <CardTitle className="text-base">Opgeslagen bedrijven</CardTitle>
             <CardDescription>
-              Opgeslagen in companies (+ company_sources).
+              companies + company_sources voor deze job (org-scoped).
             </CardDescription>
           </CardHeader>
           <CardContent>

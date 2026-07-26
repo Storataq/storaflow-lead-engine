@@ -26,20 +26,24 @@ export function StartScrapeButton({
   const [busy, setBusy] = useState(false);
 
   async function handleStart() {
+    if (busy || pending) return;
     setBusy(true);
-    const result = await startScrapeAction(searchQueryId);
-    setBusy(false);
+    try {
+      const result = await startScrapeAction(searchQueryId);
 
-    if (!result.success || !result.jobId) {
-      toast.error(result.message);
-      return;
+      if (!result.success || !result.jobId) {
+        toast.error(result.message);
+        return;
+      }
+
+      toast.success(result.message);
+      startTransition(() => {
+        router.push(`/jobs/${result.jobId}`);
+        router.refresh();
+      });
+    } finally {
+      setBusy(false);
     }
-
-    toast.success(result.message);
-    startTransition(() => {
-      router.push(`/jobs/${result.jobId}`);
-      router.refresh();
-    });
   }
 
   return (
@@ -54,7 +58,7 @@ export function StartScrapeButton({
       }}
     >
       <Play className="size-4" />
-      {busy || pending ? "Starten…" : "Start scrape"}
+      {busy || pending ? "Starten…" : "Start mock scrape"}
     </Button>
   );
 }

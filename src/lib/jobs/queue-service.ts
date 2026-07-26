@@ -12,7 +12,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   MOCK_ENGINE_CLAIM,
-  MOCK_PROGRESS_STEPS,
+  PIPELINE_PROGRESS,
+  PIPELINE_STAGE_COUNT,
   computeRuntimeMs,
   normalizeJobStatus,
   priorityRank,
@@ -82,7 +83,7 @@ export async function createDraftJob(
   supabase: Client,
   input: CreateQueuedJobInput,
 ): Promise<ScrapeJobRow> {
-  const pagesTotal = MOCK_PROGRESS_STEPS.length;
+  const pagesTotal = PIPELINE_STAGE_COUNT;
   const { data, error } = await supabase
     .from("scrape_jobs")
     .insert({
@@ -97,7 +98,7 @@ export async function createDraftJob(
       target_pages: pagesTotal,
       companies_found: 0,
       contacts_found: 0,
-      progress_percent: 0,
+      progress_percent: PIPELINE_PROGRESS.created,
       error_count: 0,
       current_source_code: input.sourceCode,
       error_message: null,
@@ -113,9 +114,12 @@ export async function createDraftJob(
     organizationId: input.organizationId,
     jobId: data.id,
     eventCode: "job_created",
-    message: "Job Created",
+    message: "Job created",
     sourceCode: input.sourceCode,
-    metadata: { priority: data.priority },
+    metadata: {
+      priority: data.priority,
+      progress_percent: PIPELINE_PROGRESS.created,
+    },
   });
 
   const pending = await updateJob(supabase, input.organizationId, data.id, {
@@ -153,6 +157,10 @@ export async function enqueue(
 
   const updated = await updateJob(supabase, organizationId, jobId, {
     status: "queued",
+    progress_percent: Math.max(
+      job.progress_percent,
+      PIPELINE_PROGRESS.queued,
+    ),
     last_heartbeat_at: new Date().toISOString(),
     completed_at: null,
     error_message: null,
@@ -161,9 +169,10 @@ export async function enqueue(
   await appendJobLog(supabase, {
     organizationId,
     jobId,
-    eventCode: "queued",
-    message: "Queued",
+    eventCode: "job_queued",
+    message: "Job queued",
     sourceCode: job.current_source_code,
+    metadata: { progress_percent: PIPELINE_PROGRESS.queued },
   });
 
   return { success: true, message: "Queued", job: updated };

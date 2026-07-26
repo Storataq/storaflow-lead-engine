@@ -792,6 +792,42 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["crm_notes"]["Insert"]>;
         Relationships: [];
       };
+      crm_lead_contacts: {
+        Row: {
+          id: string;
+          organization_id: string;
+          lead_id: string;
+          first_name: string;
+          last_name: string;
+          job_title: string | null;
+          email: string | null;
+          phone: string | null;
+          linkedin_url: string | null;
+          is_primary: boolean;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          lead_id: string;
+          first_name?: string;
+          last_name?: string;
+          job_title?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          linkedin_url?: string | null;
+          is_primary?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["crm_lead_contacts"]["Insert"]
+        >;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

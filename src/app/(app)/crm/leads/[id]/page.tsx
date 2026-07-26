@@ -2,14 +2,17 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { CrmSubnav } from "@/components/crm/crm-subnav";
-import { LeadDetailClient } from "@/components/crm/lead-detail-client";
+import { LeadWorkspace } from "@/components/crm/lead-workspace";
 import { PageHeader } from "@/components/layout/page-header";
 import {
   getLead,
+  getLeadCompanyEnrichment,
   listAllStages,
   listDeals,
   listLeadActivities,
+  listLeadContacts,
   listNotes,
+  listOrganizationMembers,
   listPipelines,
   listTasks,
 } from "@/lib/crm/queries";
@@ -23,7 +26,10 @@ export async function generateMetadata({
   params,
 }: LeadDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  return { title: `Lead ${id.slice(0, 8)}` };
+  const context = await getActiveOrganization();
+  if (!context) return { title: "Lead" };
+  const lead = await getLead(context.organization.id, id);
+  return { title: lead ? lead.company_name : `Lead ${id.slice(0, 8)}` };
 }
 
 export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
@@ -35,15 +41,27 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
   const lead = await getLead(orgId, id);
   if (!lead) notFound();
 
-  const [pipelines, stages, tasks, notes, activities, allDeals] =
-    await Promise.all([
-      listPipelines(orgId),
-      listAllStages(orgId),
-      listTasks(orgId, id),
-      listNotes(orgId, id),
-      listLeadActivities(orgId, id),
-      listDeals(orgId),
-    ]);
+  const [
+    pipelines,
+    stages,
+    tasks,
+    notes,
+    activities,
+    allDeals,
+    contacts,
+    enrichment,
+    members,
+  ] = await Promise.all([
+    listPipelines(orgId),
+    listAllStages(orgId),
+    listTasks(orgId, id),
+    listNotes(orgId, id),
+    listLeadActivities(orgId, id),
+    listDeals(orgId),
+    listLeadContacts(orgId, id),
+    getLeadCompanyEnrichment(orgId, lead.company_id),
+    listOrganizationMembers(orgId),
+  ]);
 
   const deals = allDeals.filter((deal) => deal.lead_id === id);
 
@@ -51,7 +69,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     <div>
       <PageHeader
         title={lead.company_name}
-        description="Lead detail met algemeen, deals, taken, notities en timeline."
+        description="Lead workspace met company intelligence, timeline, notes, tasks en deals."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "CRM", href: "/crm" },
@@ -60,14 +78,17 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
         ]}
       />
       <CrmSubnav currentPath="/crm/leads" />
-      <LeadDetailClient
+      <LeadWorkspace
         lead={lead}
+        enrichment={enrichment}
         pipelines={pipelines}
         stages={stages}
         tasks={tasks}
         notes={notes}
         activities={activities}
         deals={deals}
+        contacts={contacts}
+        members={members}
       />
     </div>
   );

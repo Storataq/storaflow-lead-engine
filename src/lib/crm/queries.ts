@@ -8,10 +8,19 @@ export type CrmLeadRow = Database["public"]["Tables"]["crm_leads"]["Row"];
 export type CrmDealRow = Database["public"]["Tables"]["crm_deals"]["Row"];
 export type CrmTaskRow = Database["public"]["Tables"]["crm_tasks"]["Row"];
 export type CrmNoteRow = Database["public"]["Tables"]["crm_notes"]["Row"];
+export type CrmLeadContactRow =
+  Database["public"]["Tables"]["crm_lead_contacts"]["Row"];
 
 export type CrmLeadWithRelations = CrmLeadRow & {
   pipeline: Pick<CrmPipelineRow, "id" | "name" | "color"> | null;
   stage: Pick<CrmStageRow, "id" | "name" | "color" | "slug" | "is_won" | "is_lost"> | null;
+};
+
+export type LeadCompanyEnrichment = {
+  linkedinUrl: string | null;
+  address: string | null;
+  companySize: string | null;
+  description: string | null;
 };
 
 export type CrmDashboardStats = {
@@ -490,5 +499,56 @@ export async function getCrmDashboardStats(
     leadsThisMonth,
     averageDealValue,
     dealsByStage,
+  };
+}
+
+export async function listLeadContacts(
+  organizationId: string,
+  leadId: string,
+): Promise<CrmLeadContactRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("crm_lead_contacts")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("lead_id", leadId)
+    .order("is_primary", { ascending: false })
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getLeadCompanyEnrichment(
+  organizationId: string,
+  companyId: string | null,
+): Promise<LeadCompanyEnrichment> {
+  const empty: LeadCompanyEnrichment = {
+    linkedinUrl: null,
+    address: null,
+    companySize: null,
+    description: null,
+  };
+  if (!companyId) return empty;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("companies")
+    .select("linkedin_url, description, city, region, postal_code, country")
+    .eq("organization_id", organizationId)
+    .eq("id", companyId)
+    .maybeSingle();
+
+  if (error || !data) return empty;
+
+  const address = [data.postal_code, data.city, data.region, data.country]
+    .filter(Boolean)
+    .join(", ");
+
+  return {
+    linkedinUrl: data.linkedin_url,
+    address: address || null,
+    companySize: null,
+    description: data.description,
   };
 }

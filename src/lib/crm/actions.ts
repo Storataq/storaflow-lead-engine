@@ -890,3 +890,402 @@ export async function moveLeadsPipelineAction(
     message: `${leadIds.length} lead(s) verplaatst.`,
   };
 }
+
+export async function updateNoteAction(
+  noteId: string,
+  formData: FormData,
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const bodyHtml = String(formData.get("body_html") ?? "").trim();
+  const bodyText =
+    String(formData.get("body_text") ?? "").trim() ||
+    bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+  if (!bodyHtml && !bodyText) {
+    return { success: false, message: "Notitie mag niet leeg zijn." };
+  }
+
+  const supabase = await createClient();
+  const orgId = context.organization.id;
+
+  const { data: existing } = await supabase
+    .from("crm_notes")
+    .select("id, lead_id")
+    .eq("organization_id", orgId)
+    .eq("id", noteId)
+    .maybeSingle();
+
+  if (!existing) return { success: false, message: "Notitie niet gevonden." };
+
+  const { error } = await supabase
+    .from("crm_notes")
+    .update({
+      body_html: bodyHtml || `<p>${bodyText}</p>`,
+      body_text: bodyText,
+    })
+    .eq("organization_id", orgId)
+    .eq("id", noteId);
+
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon notitie niet bijwerken."),
+    };
+  }
+
+  revalidateCrm(existing.lead_id ? [`/crm/leads/${existing.lead_id}`] : []);
+  return { success: true, message: "Notitie bijgewerkt.", id: noteId };
+}
+
+export async function deleteNoteAction(noteId: string): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const supabase = await createClient();
+  const orgId = context.organization.id;
+
+  const { data: existing } = await supabase
+    .from("crm_notes")
+    .select("id, lead_id")
+    .eq("organization_id", orgId)
+    .eq("id", noteId)
+    .maybeSingle();
+
+  if (!existing) return { success: false, message: "Notitie niet gevonden." };
+
+  const { error } = await supabase
+    .from("crm_notes")
+    .delete()
+    .eq("organization_id", orgId)
+    .eq("id", noteId);
+
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon notitie niet verwijderen."),
+    };
+  }
+
+  revalidateCrm(existing.lead_id ? [`/crm/leads/${existing.lead_id}`] : []);
+  return { success: true, message: "Notitie verwijderd.", id: noteId };
+}
+
+export async function updateTaskAction(
+  taskId: string,
+  formData: FormData,
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const dueRaw = String(formData.get("due_at") ?? "").trim();
+  const priority = String(formData.get("priority") ?? "normal");
+  const status = String(formData.get("status") ?? "todo");
+  const assigned =
+    String(formData.get("assigned_user_id") ?? "").trim() || null;
+
+  if (!title) return { success: false, message: "Titel is verplicht." };
+
+  const supabase = await createClient();
+  const orgId = context.organization.id;
+
+  const { data: existing } = await supabase
+    .from("crm_tasks")
+    .select("id, lead_id")
+    .eq("organization_id", orgId)
+    .eq("id", taskId)
+    .maybeSingle();
+
+  if (!existing) return { success: false, message: "Taak niet gevonden." };
+
+  const { error } = await supabase
+    .from("crm_tasks")
+    .update({
+      title,
+      description,
+      due_at: dueRaw ? new Date(dueRaw).toISOString() : null,
+      priority: priority as "low" | "normal" | "high" | "urgent",
+      status: status as "todo" | "in_progress" | "done" | "cancelled",
+      assigned_user_id: assigned,
+    })
+    .eq("organization_id", orgId)
+    .eq("id", taskId);
+
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon taak niet bijwerken."),
+    };
+  }
+
+  revalidateCrm(existing.lead_id ? [`/crm/leads/${existing.lead_id}`] : []);
+  return { success: true, message: "Taak bijgewerkt.", id: taskId };
+}
+
+export async function deleteTaskAction(taskId: string): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const supabase = await createClient();
+  const orgId = context.organization.id;
+
+  const { data: existing } = await supabase
+    .from("crm_tasks")
+    .select("id, lead_id")
+    .eq("organization_id", orgId)
+    .eq("id", taskId)
+    .maybeSingle();
+
+  if (!existing) return { success: false, message: "Taak niet gevonden." };
+
+  const { error } = await supabase
+    .from("crm_tasks")
+    .delete()
+    .eq("organization_id", orgId)
+    .eq("id", taskId);
+
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon taak niet verwijderen."),
+    };
+  }
+
+  revalidateCrm(existing.lead_id ? [`/crm/leads/${existing.lead_id}`] : []);
+  return { success: true, message: "Taak verwijderd.", id: taskId };
+}
+
+export async function createLeadContactAction(
+  formData: FormData,
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const leadId = String(formData.get("lead_id") ?? "").trim();
+  const firstName = String(formData.get("first_name") ?? "").trim();
+  const lastName = String(formData.get("last_name") ?? "").trim();
+  if (!leadId || (!firstName && !lastName)) {
+    return {
+      success: false,
+      message: "Lead en minimaal een naam zijn verplicht.",
+    };
+  }
+
+  const supabase = await createClient();
+  const orgId = context.organization.id;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isPrimary = formData.get("is_primary") === "on";
+
+  if (isPrimary) {
+    await supabase
+      .from("crm_lead_contacts")
+      .update({ is_primary: false })
+      .eq("organization_id", orgId)
+      .eq("lead_id", leadId);
+  }
+
+  const { data, error } = await supabase
+    .from("crm_lead_contacts")
+    .insert({
+      organization_id: orgId,
+      lead_id: leadId,
+      first_name: firstName,
+      last_name: lastName,
+      job_title: String(formData.get("job_title") ?? "").trim() || null,
+      email: String(formData.get("email") ?? "").trim() || null,
+      phone: String(formData.get("phone") ?? "").trim() || null,
+      linkedin_url: String(formData.get("linkedin_url") ?? "").trim() || null,
+      is_primary: isPrimary,
+      created_by: user?.id ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon contact niet opslaan."),
+    };
+  }
+
+  await logCrmActivity(supabase, {
+    organizationId: orgId,
+    userId: user?.id,
+    eventType: "crm.contact.created",
+    entityType: "crm_lead",
+    entityId: leadId,
+    description: `Contact toegevoegd: ${firstName} ${lastName}`.trim(),
+    metadata: { contactId: data.id },
+  });
+
+  revalidateCrm([`/crm/leads/${leadId}`]);
+  return { success: true, message: "Contact opgeslagen.", id: data.id };
+}
+
+export async function updateLeadContactAction(
+  contactId: string,
+  formData: FormData,
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const firstName = String(formData.get("first_name") ?? "").trim();
+  const lastName = String(formData.get("last_name") ?? "").trim();
+  if (!firstName && !lastName) {
+    return { success: false, message: "Minimaal een naam is verplicht." };
+  }
+
+  const supabase = await createClient();
+  const orgId = context.organization.id;
+  const isPrimary = formData.get("is_primary") === "on";
+
+  const { data: existing } = await supabase
+    .from("crm_lead_contacts")
+    .select("id, lead_id")
+    .eq("organization_id", orgId)
+    .eq("id", contactId)
+    .maybeSingle();
+
+  if (!existing) return { success: false, message: "Contact niet gevonden." };
+
+  if (isPrimary) {
+    await supabase
+      .from("crm_lead_contacts")
+      .update({ is_primary: false })
+      .eq("organization_id", orgId)
+      .eq("lead_id", existing.lead_id);
+  }
+
+  const { error } = await supabase
+    .from("crm_lead_contacts")
+    .update({
+      first_name: firstName,
+      last_name: lastName,
+      job_title: String(formData.get("job_title") ?? "").trim() || null,
+      email: String(formData.get("email") ?? "").trim() || null,
+      phone: String(formData.get("phone") ?? "").trim() || null,
+      linkedin_url: String(formData.get("linkedin_url") ?? "").trim() || null,
+      is_primary: isPrimary,
+    })
+    .eq("organization_id", orgId)
+    .eq("id", contactId);
+
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon contact niet bijwerken."),
+    };
+  }
+
+  revalidateCrm([`/crm/leads/${existing.lead_id}`]);
+  return { success: true, message: "Contact bijgewerkt.", id: contactId };
+}
+
+export async function deleteLeadContactAction(
+  contactId: string,
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const supabase = await createClient();
+  const orgId = context.organization.id;
+
+  const { data: existing } = await supabase
+    .from("crm_lead_contacts")
+    .select("id, lead_id")
+    .eq("organization_id", orgId)
+    .eq("id", contactId)
+    .maybeSingle();
+
+  if (!existing) return { success: false, message: "Contact niet gevonden." };
+
+  const { error } = await supabase
+    .from("crm_lead_contacts")
+    .delete()
+    .eq("organization_id", orgId)
+    .eq("id", contactId);
+
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon contact niet verwijderen."),
+    };
+  }
+
+  revalidateCrm([`/crm/leads/${existing.lead_id}`]);
+  return { success: true, message: "Contact verwijderd.", id: contactId };
+}
+
+export async function convertLeadToDealAction(
+  leadId: string,
+  formData: FormData,
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const supabase = await createClient();
+  const orgId = context.organization.id;
+
+  const { data: lead } = await supabase
+    .from("crm_leads")
+    .select("*")
+    .eq("organization_id", orgId)
+    .eq("id", leadId)
+    .maybeSingle();
+
+  if (!lead) return { success: false, message: "Lead niet gevonden." };
+
+  const title =
+    String(formData.get("title") ?? "").trim() ||
+    `Deal — ${lead.company_name}`;
+  const value = Number(
+    formData.get("value") ?? lead.deal_value ?? 0,
+  );
+  const expectedClose = String(formData.get("expected_close_date") ?? "").trim();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from("crm_deals")
+    .insert({
+      organization_id: orgId,
+      lead_id: leadId,
+      pipeline_id: lead.pipeline_id,
+      stage_id: lead.stage_id,
+      title,
+      value: Number.isFinite(value) ? value : 0,
+      expected_close_date: expectedClose || null,
+      owner_user_id: lead.owner_user_id ?? user?.id ?? null,
+      created_by: user?.id ?? null,
+      status: "open",
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon deal niet aanmaken."),
+    };
+  }
+
+  await logCrmActivity(supabase, {
+    organizationId: orgId,
+    userId: user?.id,
+    eventType: "crm.deal.created",
+    entityType: "crm_lead",
+    entityId: leadId,
+    description: `Deal aangemaakt: ${title}`,
+    metadata: { dealId: data.id },
+  });
+
+  revalidateCrm([`/crm/leads/${leadId}`, `/crm/deals/${data.id}`]);
+  return { success: true, message: "Deal aangemaakt.", id: data.id };
+}

@@ -42,7 +42,7 @@ export default function DashboardPage() {
         description="Overzicht van je lead database, scrapingtaken en recente activiteit."
         breadcrumbs={[{ label: "Dashboard" }]}
         actions={
-          <Button nativeButton={false} render={<Link href="/searches/new" />}>
+          <Button nativeButton={false} render={<Link href="/zoekopdrachten" />}>
             <Search className="size-4" />
             Nieuwe zoekopdracht
           </Button>

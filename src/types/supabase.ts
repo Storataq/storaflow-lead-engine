@@ -157,6 +157,12 @@ export type Database = {
           crawl_websites: boolean;
           only_generic_emails: boolean;
           source_type: ScrapeSourceType;
+          countries: string[];
+          keywords: string[];
+          industries: string[];
+          company_size: string | null;
+          website_required: boolean;
+          linkedin_required: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -175,6 +181,12 @@ export type Database = {
           crawl_websites?: boolean;
           only_generic_emails?: boolean;
           source_type?: ScrapeSourceType;
+          countries?: string[];
+          keywords?: string[];
+          industries?: string[];
+          company_size?: string | null;
+          website_required?: boolean;
+          linkedin_required?: boolean;
           created_at?: string;
           updated_at?: string;
         };

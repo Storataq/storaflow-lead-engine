@@ -7,7 +7,7 @@ export const DEFAULT_USER_AGENT =
 
 export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
-  { href: "/searches", label: "Zoekopdrachten", icon: "Search" },
+  { href: "/zoekopdrachten", label: "Zoekopdrachten", icon: "Search" },
   { href: "/jobs", label: "Scrapingtaken", icon: "ListTodo" },
   { href: "/companies", label: "Bedrijven", icon: "Building2" },
   { href: "/contacts", label: "Contactgegevens", icon: "Mail" },

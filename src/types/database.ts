@@ -2,12 +2,19 @@ export type OrganizationRole = "owner" | "admin";
 
 export type SearchQueryStatus =
   | "draft"
+  | "active"
+  | "paused"
   | "queued"
   | "running"
   | "completed"
   | "partially_completed"
   | "failed"
   | "cancelled";
+
+/** Beheerstatus voor opgeslagen zoekcriteria (fase 2 UI). */
+export type SearchCriteriaStatus = "draft" | "active" | "paused";
+
+export type CompanySizeOption = "1-10" | "11-50" | "51-250" | "250+";
 
 export type ScrapeJobStatus =
   | "queued"

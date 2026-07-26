@@ -36,7 +36,11 @@ export function StartScrapeButton({
         return;
       }
 
-      toast.success(result.message);
+      if (result.message.includes("al een actieve scrape")) {
+        toast.message(result.message);
+      } else {
+        toast.success(result.message);
+      }
       startTransition(() => {
         router.push(`/jobs/${result.jobId}`);
         router.refresh();

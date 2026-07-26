@@ -75,7 +75,7 @@ export function FilterableCodeChecklist({
         <div className="flex flex-wrap gap-1.5">
           {selected.map((code) => (
             <Badge key={code} variant="secondary" className="gap-1 pr-1">
-              <span className="max-w-40 truncate">
+              <span className="max-w-[14rem] break-words whitespace-normal">
                 {labelByCode.get(code) ?? code}
               </span>
               <button
@@ -104,10 +104,11 @@ export function FilterableCodeChecklist({
           return (
             <label
               key={option.code}
-              className="flex items-center gap-2 text-sm"
+              className="flex min-w-0 items-start gap-2 text-sm"
             >
               <Checkbox
                 checked={checked}
+                className="mt-0.5"
                 onCheckedChange={(value) => {
                   if (value === true && !checked) {
                     onChange([...selected, option.code]);
@@ -117,7 +118,9 @@ export function FilterableCodeChecklist({
                   }
                 }}
               />
-              <span className="truncate">{option.label}</span>
+              <span className="min-w-0 flex-1 break-words whitespace-normal leading-snug">
+                {option.label}
+              </span>
               {checked ? (
                 <input type="hidden" name={name} value={option.code} />
               ) : null}

@@ -20,13 +20,46 @@ type SearchQueryPreviewPanelProps = {
   input: SearchPreviewInput;
 };
 
+function PreviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-1 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-3">
+      <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        {label}
+      </dt>
+      <dd className="break-words text-sm text-foreground">{value}</dd>
+    </div>
+  );
+}
+
 export function SearchQueryPreviewPanel({
   input,
 }: SearchQueryPreviewPanelProps) {
   const chips = buildSearchFilterChips(input);
   const preview = buildSearchQueryPreview(input);
   const activeCount = countActiveFilters(input);
-  const title = input.name.trim() || "Naamloze zoekopdracht";
+  const title = input.name.trim();
+  const hasContent =
+    Boolean(title) ||
+    Boolean(input.searchPrompt.trim()) ||
+    activeCount > 0;
+
+  if (!hasContent) {
+    return (
+      <Card className="shadow-none">
+        <CardHeader>
+          <CardTitle className="text-base">Preview</CardTitle>
+          <CardDescription>
+            Vul links criteria in om hier een live samenvatting te zien.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Nog niets ingevuld. Start met een naam, land en keyword.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -36,17 +69,33 @@ export function SearchQueryPreviewPanel({
             <div>
               <CardTitle className="text-base">Preview</CardTitle>
               <CardDescription>
-                Zo ziet de volledige zoekopdracht eruit.
+                Live weergave van de huidige formulierwaarden.
               </CardDescription>
             </div>
             <Badge variant="outline">{searchStatusLabel(input.status)}</Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div>
-            <p className="text-sm font-medium">{title}</p>
-          </div>
-          <pre className="whitespace-pre-wrap rounded-lg border border-border bg-muted/40 p-3 font-sans text-sm leading-relaxed text-foreground">
+          <dl className="space-y-3">
+            <PreviewRow label="Naam" value={title || "—"} />
+            <PreviewRow
+              label="Status"
+              value={searchStatusLabel(input.status)}
+            />
+            <PreviewRow
+              label="AI prompt"
+              value={input.searchPrompt.trim() || "—"}
+            />
+            <PreviewRow
+              label="Website"
+              value={input.websiteRequired ? "Verplicht" : "Optioneel"}
+            />
+            <PreviewRow
+              label="LinkedIn"
+              value={input.linkedinRequired ? "Verplicht" : "Optioneel"}
+            />
+          </dl>
+          <pre className="whitespace-pre-wrap break-words rounded-lg border border-border bg-muted/40 p-3 font-sans text-sm leading-relaxed text-foreground">
             {preview}
           </pre>
         </CardContent>
@@ -81,7 +130,11 @@ export function SearchQueryPreviewPanel({
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {groupChips.map((chip) => (
-                      <Badge key={chip.id} variant="secondary">
+                      <Badge
+                        key={chip.id}
+                        variant="secondary"
+                        className="max-w-full break-words whitespace-normal"
+                      >
                         {chip.label}
                       </Badge>
                     ))}

@@ -6,6 +6,7 @@ import { JobProgressBar } from "@/components/jobs/job-progress-bar";
 import { JobRunnerControls } from "@/components/jobs/job-runner-controls";
 import { JobStatusBadge } from "@/components/jobs/job-status-badge";
 import { PageHeader } from "@/components/layout/page-header";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -71,6 +72,32 @@ function readConfidence(payload: unknown): string {
   if (!raw) return "—";
   const num = Number(raw);
   return Number.isFinite(num) ? num.toFixed(2) : "—";
+}
+
+function safeExternalHref(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+function logLevelVariant(
+  level: string,
+): "secondary" | "outline" | "destructive" {
+  switch (level) {
+    case "error":
+      return "destructive";
+    case "warn":
+      return "outline";
+    default:
+      return "secondary";
+  }
 }
 
 export default async function JobDetailPage({ params }: JobDetailPageProps) {
@@ -265,16 +292,21 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                     key={log.id}
                     className="rounded-lg border border-border px-3 py-2"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{log.event_code}</span>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={logLevelVariant(log.level)}>
+                          {log.level}
+                        </Badge>
+                        <span className="font-medium">{log.event_code}</span>
+                      </div>
                       <span className="text-xs text-muted-foreground">
-                        {log.level} · {formatDate(log.created_at)}
+                        {formatDate(log.created_at)}
                       </span>
                     </div>
-                    <p className="text-muted-foreground">{log.message}</p>
+                    <p className="mt-1 text-muted-foreground">{log.message}</p>
                     {log.source_code ? (
                       <p className="text-xs text-muted-foreground">
-                        source: {log.source_code}
+                        connector: {log.source_code}
                       </p>
                     ) : null}
                   </li>
@@ -288,8 +320,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           <CardHeader>
             <CardTitle className="text-base">Opgeslagen resultaten</CardTitle>
             <CardDescription>
-              Persistente scrape_results (Naam, Categorie, Website, Telefoon,
-              Stad, Land, Confidence).
+              Persistente scrape_results uit de database.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -302,42 +333,65 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Naam</TableHead>
-                      <TableHead>Categorie</TableHead>
-                      <TableHead>Website</TableHead>
-                      <TableHead>Telefoon</TableHead>
-                      <TableHead>Stad</TableHead>
+                      <TableHead>Bedrijfsnaam</TableHead>
                       <TableHead>Land</TableHead>
+                      <TableHead>Stad</TableHead>
+                      <TableHead>Branche</TableHead>
+                      <TableHead>Website</TableHead>
+                      <TableHead>E-mail</TableHead>
+                      <TableHead>Telefoon</TableHead>
+                      <TableHead>Bron</TableHead>
                       <TableHead>Confidence</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {results.map((result) => (
-                      <TableRow key={result.id}>
-                        <TableCell className="font-medium">
-                          {result.company_name}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {result.industry ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {result.website_url ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {readPayloadString(result.raw_payload, "phones") ??
-                            "—"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {result.city ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {result.country ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {readConfidence(result.raw_payload)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {results.map((result) => {
+                      const websiteHref = safeExternalHref(result.website_url);
+                      return (
+                        <TableRow key={result.id}>
+                          <TableCell className="font-medium">
+                            {result.company_name}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {result.country ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {result.city ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {result.industry ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {websiteHref ? (
+                              <a
+                                href={websiteHref}
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                className="underline-offset-4 hover:underline"
+                              >
+                                {result.website_url}
+                              </a>
+                            ) : (
+                              (result.website_url ?? "—")
+                            )}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {readPayloadString(result.raw_payload, "emails") ??
+                              "—"}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {readPayloadString(result.raw_payload, "phones") ??
+                              "—"}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {result.source_code}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {readConfidence(result.raw_payload)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
+import { ChipMultiInput } from "@/components/searches/chip-multi-input";
 import {
   FilterableCodeChecklist,
   toCountryOptions,
@@ -11,21 +12,6 @@ import {
   toSourceOptions,
 } from "@/components/searches/filterable-code-checklist";
 import { SearchQueryPreviewPanel } from "@/components/searches/search-query-preview";
-import {
-  createSearchQueryAction,
-  updateSearchQueryAction,
-  type SearchActionResult,
-} from "@/lib/searches/actions";
-import {
-  COMPANY_SIZE_OPTIONS,
-  SEARCH_CRITERIA_STATUSES,
-} from "@/lib/searches/constants";
-import { parseListFromTextarea } from "@/lib/searches/schema";
-import type { SearchQueryRow } from "@/lib/searches/queries";
-import { COUNTRIES } from "@/lib/international/countries";
-import { INDUSTRIES } from "@/lib/international/industries";
-import { LANGUAGES } from "@/lib/international/languages";
-import { SOURCES } from "@/lib/international/sources";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +26,22 @@ import {
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { COUNTRIES } from "@/lib/international/countries";
+import { INDUSTRIES } from "@/lib/international/industries";
+import { LANGUAGES } from "@/lib/international/languages";
+import { SOURCES } from "@/lib/international/sources";
+import {
+  createSearchQueryAction,
+  updateSearchQueryAction,
+  type SearchActionResult,
+} from "@/lib/searches/actions";
+import {
+  COMPANY_SIZE_OPTIONS,
+  SEARCH_CRITERIA_STATUSES,
+} from "@/lib/searches/constants";
 import type { SearchPreviewInput } from "@/lib/searches/preview";
+import type { SearchQueryRow } from "@/lib/searches/queries";
+import { cn } from "@/lib/utils";
 
 type SearchQuerySheetProps = {
   open: boolean;
@@ -78,6 +79,31 @@ function Section({
   );
 }
 
+function TabButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+        active
+          ? "bg-background text-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
 function SearchQuerySheetForm({
   isEdit,
   initial,
@@ -91,6 +117,7 @@ function SearchQuerySheetForm({
 }) {
   const action = isEdit ? updateSearchQueryAction : createSearchQueryAction;
   const [state, formAction, pending] = useActionState(action, initialState);
+  const [tab, setTab] = useState<"basis" | "preview">("basis");
 
   const [name, setName] = useState(initial?.name ?? "");
   const [searchPrompt, setSearchPrompt] = useState(
@@ -99,22 +126,18 @@ function SearchQuerySheetForm({
   const [countries, setCountries] = useState<string[]>(
     initial?.countries ?? [],
   );
-  const [regionsText, setRegionsText] = useState(
-    (initial?.regions ?? []).join("\n"),
-  );
-  const [citiesText, setCitiesText] = useState(
-    (initial?.cities ?? []).join("\n"),
-  );
+  const [regions, setRegions] = useState<string[]>(initial?.regions ?? []);
+  const [cities, setCities] = useState<string[]>(initial?.cities ?? []);
   const [languages, setLanguages] = useState<string[]>(
     initial?.languages ?? [],
   );
   const [industries, setIndustries] = useState<string[]>(
     initial?.industries ?? [],
   );
-  const [sources, setSources] = useState<string[]>(initial?.sources ?? []);
-  const [keywordsText, setKeywordsText] = useState(
-    (initial?.keywords ?? []).join("\n"),
+  const [sources, setSources] = useState<string[]>(
+    initial?.sources?.length ? initial.sources : ["google_maps"],
   );
+  const [keywords, setKeywords] = useState<string[]>(initial?.keywords ?? []);
   const [companySize, setCompanySize] = useState<string>(
     initial?.company_size ?? "",
   );
@@ -146,12 +169,12 @@ function SearchQuerySheetForm({
       name,
       searchPrompt,
       countries,
-      regions: parseListFromTextarea(regionsText),
-      cities: parseListFromTextarea(citiesText),
+      regions,
+      cities,
       languages,
       industries,
       sources,
-      keywords: parseListFromTextarea(keywordsText),
+      keywords,
       companySize,
       websiteRequired,
       linkedinRequired,
@@ -161,12 +184,12 @@ function SearchQuerySheetForm({
       name,
       searchPrompt,
       countries,
-      regionsText,
-      citiesText,
+      regions,
+      cities,
       languages,
       industries,
       sources,
-      keywordsText,
+      keywords,
       companySize,
       websiteRequired,
       linkedinRequired,
@@ -178,12 +201,27 @@ function SearchQuerySheetForm({
     <form action={formAction} className="flex min-h-0 flex-1 flex-col">
       {isEdit ? <input type="hidden" name="id" value={initial?.id} /> : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
-          <div className="space-y-4">
+      <div className="border-b border-border px-4 py-2">
+        <div className="inline-flex rounded-xl bg-muted/60 p-1">
+          <TabButton
+            active={tab === "basis"}
+            label="Basis"
+            onClick={() => setTab("basis")}
+          />
+          <TabButton
+            active={tab === "preview"}
+            label="Preview"
+            onClick={() => setTab("preview")}
+          />
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4">
+        {tab === "basis" ? (
+          <div className="mx-auto w-full max-w-xl space-y-4">
             <Section
               title="Basis"
-              description="Naam, status en AI-prompt voor deze wereldwijde zoekopdracht."
+              description="Naam, status en AI-prompt voor deze zoekopdracht."
             >
               <div className="space-y-2">
                 <Label htmlFor="name">Naam *</Label>
@@ -193,7 +231,7 @@ function SearchQuerySheetForm({
                   required
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  placeholder="bijv. Florists South Holland"
+                  placeholder="bijv. Bloemenwinkels Amsterdam"
                 />
               </div>
 
@@ -205,11 +243,10 @@ function SearchQuerySheetForm({
                   rows={4}
                   value={searchPrompt}
                   onChange={(event) => setSearchPrompt(event.target.value)}
-                  placeholder="Find florists in Germany with a website and LinkedIn profile"
+                  placeholder="Find independent flower shops and florists in Amsterdam."
                 />
                 <p className="text-xs text-muted-foreground">
-                  Natuurlijke taal. Later kan AI dit uitbreiden naar
-                  gestructureerde filters.
+                  Optioneel. Minimaal één keyword, branche of prompt is verplicht.
                 </p>
               </div>
 
@@ -233,7 +270,7 @@ function SearchQuerySheetForm({
 
             <Section
               title="Locatie"
-              description="ISO-landen plus vrije regio's en steden wereldwijd."
+              description="ISO-landen plus regio's en steden."
             >
               <FilterableCodeChecklist
                 label="Landen"
@@ -245,43 +282,36 @@ function SearchQuerySheetForm({
                 searchPlaceholder="Zoek op land of ISO-code…"
               />
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="regions">Regio&apos;s / staten / provincies</Label>
-                  <Textarea
-                    id="regions"
-                    name="regions"
-                    rows={4}
-                    value={regionsText}
-                    onChange={(event) => setRegionsText(event.target.value)}
-                    placeholder={"California\nBayern\nVlaanderen\nDubai"}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cities">Steden</Label>
-                  <Textarea
-                    id="cities"
-                    name="cities"
-                    rows={4}
-                    value={citiesText}
-                    onChange={(event) => setCitiesText(event.target.value)}
-                    placeholder={"Amsterdam\nLondon\nDubai\nSingapore"}
-                  />
-                </div>
-              </div>
+              <ChipMultiInput
+                label="Regio's"
+                name="regions"
+                values={regions}
+                onChange={setRegions}
+                placeholder="Typ een regio en druk Enter"
+                hint="Bijv. Noord-Holland, Bavaria"
+              />
+
+              <ChipMultiInput
+                label="Steden"
+                name="cities"
+                values={cities}
+                onChange={setCities}
+                placeholder="Typ een stad en druk Enter"
+                hint="Bijv. Amsterdam"
+              />
             </Section>
 
             <Section
               title="Markt & taal"
-              description="Talen, branches en keywords voor leadkwaliteit."
+              description="Keywords, branches en talen."
             >
-              <FilterableCodeChecklist
-                label="Talen"
-                name="languages"
-                options={languageOptions}
-                selected={languages}
-                onChange={setLanguages}
-                searchPlaceholder="Zoek op taal of ISO-code…"
+              <ChipMultiInput
+                label="Keywords"
+                name="keywords"
+                values={keywords}
+                onChange={setKeywords}
+                placeholder="Typ een keyword en druk Enter"
+                hint="Minimaal keyword, branche of AI-prompt"
               />
 
               <FilterableCodeChecklist
@@ -293,26 +323,19 @@ function SearchQuerySheetForm({
                 searchPlaceholder="Zoek op branche…"
               />
 
-              <div className="space-y-2">
-                <Label htmlFor="keywords">Keywords *</Label>
-                <Textarea
-                  id="keywords"
-                  name="keywords"
-                  required
-                  rows={4}
-                  value={keywordsText}
-                  onChange={(event) => setKeywordsText(event.target.value)}
-                  placeholder={"florist\nbloemist\nfleuriste"}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Eén keyword per regel. Gebruik lokale termen waar nodig.
-                </p>
-              </div>
+              <FilterableCodeChecklist
+                label="Talen"
+                name="languages"
+                options={languageOptions}
+                selected={languages}
+                onChange={setLanguages}
+                searchPlaceholder="Zoek op taal of ISO-code…"
+              />
             </Section>
 
             <Section
               title="Bronnen & eisen"
-              description="Waar scrapen we, en welke signalen zijn verplicht."
+              description="Kies connectors en verplichte signalen."
             >
               <FilterableCodeChecklist
                 label="Databronnen"
@@ -324,7 +347,7 @@ function SearchQuerySheetForm({
               />
 
               <div className="space-y-2">
-                <Label htmlFor="company_size">Company size</Label>
+                <Label htmlFor="company_size">Bedrijfsgrootte</Label>
                 <select
                   id="company_size"
                   name="company_size"
@@ -343,7 +366,7 @@ function SearchQuerySheetForm({
 
               <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
                 <div className="flex items-center justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <Label htmlFor="website_required">Website verplicht</Label>
                     <p className="text-xs text-muted-foreground">
                       Alleen leads met een website meenemen.
@@ -362,8 +385,10 @@ function SearchQuerySheetForm({
                 ) : null}
 
                 <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <Label htmlFor="linkedin_required">LinkedIn verplicht</Label>
+                  <div className="min-w-0">
+                    <Label htmlFor="linkedin_required">
+                      LinkedIn verplicht
+                    </Label>
                     <p className="text-xs text-muted-foreground">
                       Alleen leads met LinkedIn-aanwezigheid meenemen.
                     </p>
@@ -388,14 +413,14 @@ function SearchQuerySheetForm({
               </Alert>
             ) : null}
           </div>
-
-          <aside className="xl:sticky xl:top-0 xl:self-start">
+        ) : (
+          <div className="mx-auto w-full max-w-xl">
             <SearchQueryPreviewPanel input={previewInput} />
-          </aside>
-        </div>
+          </div>
+        )}
       </div>
 
-      <SheetFooter className="border-t border-border sm:flex-row sm:justify-end">
+      <SheetFooter className="shrink-0 border-t border-border sm:flex-row sm:justify-end">
         <Button
           type="button"
           variant="outline"
@@ -424,15 +449,15 @@ export function SearchQuerySheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 p-0 sm:max-w-xl md:max-w-3xl xl:max-w-5xl"
+        className="flex w-full max-w-[100vw] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(720px,calc(100vw-1.5rem))]"
       >
-        <SheetHeader className="border-b border-border">
+        <SheetHeader className="shrink-0 border-b border-border pr-12">
           <SheetTitle>
             {isEdit ? "Zoekopdracht bewerken" : "Nieuwe zoekopdracht"}
           </SheetTitle>
           <SheetDescription>
-            Wereldwijde Lead Engine-criteria met ISO-landen, talen, bronnen en
-            AI-prompt. Scraping volgt later.
+            Vul criteria in, controleer de preview en sla op. Start daarna een
+            Google Maps mock scrape vanaf het overzicht.
           </SheetDescription>
         </SheetHeader>
 

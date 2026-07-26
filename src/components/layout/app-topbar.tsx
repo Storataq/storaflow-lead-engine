@@ -65,7 +65,7 @@ export function AppTopbar({
             <Menu className="size-4" />
             <span className="sr-only">Menu openen</span>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72 p-0">
+          <SheetContent side="left" className="w-72 max-w-[85vw] p-0 sm:max-w-sm">
             <SheetHeader className="border-b border-border px-4 py-3 text-left">
               <SheetTitle>{APP_NAME}</SheetTitle>
               <p className="text-xs text-muted-foreground">{organizationName}</p>

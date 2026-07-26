@@ -44,8 +44,6 @@ import {
 import type { SearchQueryRow } from "@/lib/searches/queries";
 import {
   formatCountryList,
-  formatIndustryList,
-  formatLanguageList,
 } from "@/lib/international/display";
 import { formatSourceList } from "@/lib/international/sources";
 import type { SearchCriteriaStatus } from "@/types/database";
@@ -90,16 +88,8 @@ function countriesPreview(codes: string[]): string {
   return previewList(formatCountryList(codes));
 }
 
-function languagesPreview(codes: string[]): string {
-  return previewList(formatLanguageList(codes));
-}
-
 function sourcesPreview(codes: string[]): string {
   return previewList(formatSourceList(codes));
-}
-
-function industriesPreview(codes: string[]): string {
-  return previewList(formatIndustryList(codes));
 }
 
 function matchesSearch(item: SearchQueryRow, needle: string): boolean {
@@ -204,7 +194,11 @@ export function SearchesManager({
       toast.error(result.message);
       return;
     }
-    toast.success(result.message);
+    if (result.message.includes("al een scrape")) {
+      toast.message(result.message);
+    } else {
+      toast.success(result.message);
+    }
     startTransition(() => {
       router.push(`/jobs/${result.jobId}`);
       router.refresh();
@@ -286,14 +280,13 @@ export function SearchesManager({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Countries</TableHead>
-                  <TableHead>Cities</TableHead>
-                  <TableHead>Languages</TableHead>
-                  <TableHead>Sources</TableHead>
-                  <TableHead>Keywords</TableHead>
+                  <TableHead>Naam</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Updated</TableHead>
+                  <TableHead>Landen</TableHead>
+                  <TableHead>Steden</TableHead>
+                  <TableHead>Keywords</TableHead>
+                  <TableHead>Bronnen</TableHead>
+                  <TableHead>Gewijzigd</TableHead>
                   <TableHead className="w-12 text-right">Acties</TableHead>
                 </TableRow>
               </TableHeader>
@@ -315,6 +308,9 @@ export function SearchesManager({
                         ) : null}
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <SearchStatusBadge status={item.status} />
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {countriesPreview(item.countries ?? [])}
                     </TableCell>
@@ -322,16 +318,10 @@ export function SearchesManager({
                       {joinPreview(item.cities ?? [])}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {languagesPreview(item.languages ?? [])}
+                      {joinPreview(item.keywords ?? [])}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {sourcesPreview(item.sources ?? [])}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {joinPreview(item.keywords ?? [])}
-                    </TableCell>
-                    <TableCell>
-                      <SearchStatusBadge status={item.status} />
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(item.updated_at)}
@@ -347,6 +337,13 @@ export function SearchesManager({
                           <span className="sr-only">Acties</span>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              router.push(`/zoekopdrachten/${item.id}`);
+                            }}
+                          >
+                            Bekijken
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
                               void handleStartScrape(item);
@@ -423,24 +420,18 @@ export function SearchesManager({
                   </DropdownMenu>
                 </div>
                 <dl className="mt-3 space-y-1 text-sm text-muted-foreground">
-                  <div>Countries: {countriesPreview(item.countries ?? [])}</div>
-                  <div>Cities: {joinPreview(item.cities ?? [])}</div>
-                  <div>Regions: {joinPreview(item.regions ?? [])}</div>
-                  <div>Languages: {languagesPreview(item.languages ?? [])}</div>
-                  <div>Industries: {industriesPreview(item.industries ?? [])}</div>
-                  <div>Sources: {sourcesPreview(item.sources ?? [])}</div>
+                  <div>Landen: {countriesPreview(item.countries ?? [])}</div>
+                  <div>Steden: {joinPreview(item.cities ?? [])}</div>
                   <div>Keywords: {joinPreview(item.keywords ?? [])}</div>
+                  <div>Bronnen: {sourcesPreview(item.sources ?? [])}</div>
                   <div>
-                    Requirements:{" "}
+                    Eisen:{" "}
                     {requirementsPreview(
                       item.website_required,
                       item.linkedin_required,
                     )}
                   </div>
-                  <div>
-                    Size: {item.company_size ?? "—"} · Updated:{" "}
-                    {formatDate(item.updated_at)}
-                  </div>
+                  <div>Gewijzigd: {formatDate(item.updated_at)}</div>
                 </dl>
               </div>
             ))}

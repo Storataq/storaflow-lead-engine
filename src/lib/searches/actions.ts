@@ -41,9 +41,21 @@ function normalizeFormData(formData: FormData) {
   const industries = formData.getAll("industries").map(String).filter(Boolean);
   const languages = formData.getAll("languages").map(String).filter(Boolean);
   const sources = formData.getAll("sources").map(String).filter(Boolean);
-  const keywords = parseListFromTextarea(String(formData.get("keywords") ?? ""));
-  const regions = parseListFromTextarea(String(formData.get("regions") ?? ""));
-  const cities = parseListFromTextarea(String(formData.get("cities") ?? ""));
+  const keywordsFromFields = formData.getAll("keywords").map(String);
+  const regionsFromFields = formData.getAll("regions").map(String);
+  const citiesFromFields = formData.getAll("cities").map(String);
+  const keywords =
+    keywordsFromFields.length > 0
+      ? parseListFromTextarea(keywordsFromFields.join("\n"))
+      : parseListFromTextarea(String(formData.get("keywords") ?? ""));
+  const regions =
+    regionsFromFields.length > 0
+      ? parseListFromTextarea(regionsFromFields.join("\n"))
+      : parseListFromTextarea(String(formData.get("regions") ?? ""));
+  const cities =
+    citiesFromFields.length > 0
+      ? parseListFromTextarea(citiesFromFields.join("\n"))
+      : parseListFromTextarea(String(formData.get("cities") ?? ""));
   const searchPromptRaw = String(formData.get("search_prompt") ?? "").trim();
   const companySizeRaw = String(formData.get("company_size") ?? "");
   const status = String(formData.get("status") ?? "draft") as SearchCriteriaStatus;
@@ -253,7 +265,13 @@ export async function deleteSearchQueryAction(
     .eq("organization_id", context.organization.id);
 
   if (error) {
-    return { success: false, message: error.message };
+    const friendly =
+      error.message.includes("foreign key") || error.code === "23503"
+        ? "Verwijderen is niet mogelijk omdat er nog gekoppelde scrape-jobs bestaan. Verwijder of archiveer die jobs eerst."
+        : error.message.includes("policy") || error.code === "42501"
+          ? "Je hebt geen rechten om deze zoekopdracht te verwijderen."
+          : "Verwijderen mislukt. Probeer het later opnieuw.";
+    return { success: false, message: friendly };
   }
 
   if (user) {

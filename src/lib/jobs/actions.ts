@@ -93,13 +93,35 @@ export async function startScrapeAction(
     revalidateJobPaths(existing.id, searchQueryId);
     return {
       success: true,
-      message: "Er loopt al een scrape voor deze zoekopdracht.",
+      message:
+        "Er loopt al een actieve scrape voor deze zoekopdracht. We openen die job.",
       jobId: existing.id,
       status: existing.status,
     };
   }
 
+  const hasCriteria =
+    (searchQuery.keywords?.length ?? 0) > 0 ||
+    (searchQuery.industries?.length ?? 0) > 0 ||
+    Boolean(searchQuery.search_prompt?.trim()) ||
+    Boolean(searchQuery.keyword?.trim());
+
+  if (!hasCriteria) {
+    return {
+      success: false,
+      message:
+        "Voeg minimaal één keyword, branche of AI Search Prompt toe voordat je start.",
+    };
+  }
+
   const sourceCode = resolveJobConnectorCode(searchQuery.sources ?? []);
+
+  if (!sourceCode) {
+    return {
+      success: false,
+      message: "Geen geregistreerde connector beschikbaar.",
+    };
+  }
 
   try {
     const draft = await createDraftJob(supabase, {

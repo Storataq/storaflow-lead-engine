@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { StartScrapeButton } from "@/components/jobs/start-scrape-button";
 import { PageHeader } from "@/components/layout/page-header";
+import { SearchDetailActions } from "@/components/searches/search-detail-actions";
 import { SearchStatusBadge } from "@/components/searches/search-status-badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -13,16 +13,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
-import { getSearchQuery } from "@/lib/searches/queries";
-import { buildSearchQueryPreview } from "@/lib/searches/preview";
 import {
   formatCountryList,
   formatIndustryList,
   formatLanguageList,
 } from "@/lib/international/display";
 import { formatSourceList } from "@/lib/international/sources";
-import { Badge } from "@/components/ui/badge";
+import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
+import { buildSearchQueryPreview } from "@/lib/searches/preview";
+import { getSearchQuery } from "@/lib/searches/queries";
 
 type SearchDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -82,18 +81,7 @@ export default async function ZoekopdrachtDetailPage({
           { label: "Zoekopdrachten", href: "/zoekopdrachten" },
           { label: item.name },
         ]}
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <StartScrapeButton searchQueryId={item.id} />
-            <Button
-              nativeButton={false}
-              render={<Link href="/zoekopdrachten" />}
-              variant="outline"
-            >
-              Terug naar overzicht
-            </Button>
-          </div>
-        }
+        actions={<SearchDetailActions item={item} />}
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -218,13 +206,12 @@ export default async function ZoekopdrachtDetailPage({
           <CardHeader>
             <CardTitle className="text-base">Scrape</CardTitle>
             <CardDescription>
-              Start de mock-engine om bedrijven te verzamelen.
+              Start Google Maps mock scrape via de bestaande job-pipeline.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <StartScrapeButton searchQueryId={item.id} />
-            <p className="text-sm text-muted-foreground">
-              Taken verschijnen in{" "}
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              Gebruik “Start mock scrape” in de header. Jobs verschijnen onder{" "}
               <Link href="/jobs" className="underline-offset-4 hover:underline">
                 Scrapingtaken
               </Link>
@@ -235,14 +222,14 @@ export default async function ZoekopdrachtDetailPage({
 
         <Card className="shadow-none">
           <CardHeader>
-            <CardTitle className="text-base">Laatste activiteit</CardTitle>
+            <CardTitle className="text-base">Tip</CardTitle>
             <CardDescription>
-              Jobvoortgang zie je op de scrape-detailpagina.
+              Dubbel starten opent de bestaande actieve job.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Gebruik “Start mock scrape” om Queued → Active → Completed te
-            draaien via de MockConnector-pipeline (persistente resultaten).
+            Resultaten blijven bewaard na paginavernieuwing; ze komen uit de
+            database, niet uit lokale mockdata.
           </CardContent>
         </Card>
       </div>

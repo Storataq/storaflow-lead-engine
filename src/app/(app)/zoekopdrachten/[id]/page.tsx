@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { StartScrapeButton } from "@/components/jobs/start-scrape-button";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchStatusBadge } from "@/components/searches/search-status-badge";
 import { Button } from "@/components/ui/button";
@@ -75,20 +76,23 @@ export default async function ZoekopdrachtDetailPage({
     <div>
       <PageHeader
         title={item.name}
-        description="Opgeslagen zoekcriteria voor latere scraping."
+        description="Opgeslagen zoekcriteria — start een mock-scrape om bedrijven te verzamelen."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Zoekopdrachten", href: "/zoekopdrachten" },
           { label: item.name },
         ]}
         actions={
-          <Button
-            nativeButton={false}
-            render={<Link href="/zoekopdrachten" />}
-            variant="outline"
-          >
-            Terug naar overzicht
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <StartScrapeButton searchQueryId={item.id} />
+            <Button
+              nativeButton={false}
+              render={<Link href="/zoekopdrachten" />}
+              variant="outline"
+            >
+              Terug naar overzicht
+            </Button>
+          </div>
         }
       />
 
@@ -212,13 +216,20 @@ export default async function ZoekopdrachtDetailPage({
 
         <Card className="shadow-none">
           <CardHeader>
-            <CardTitle className="text-base">Toekomstige resultaten</CardTitle>
+            <CardTitle className="text-base">Scrape</CardTitle>
             <CardDescription>
-              Placeholder — scraping volgt in fase 3.
+              Start de mock-engine om bedrijven te verzamelen.
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-3xl font-semibold tracking-tight">
-            —
+          <CardContent className="space-y-3">
+            <StartScrapeButton searchQueryId={item.id} />
+            <p className="text-sm text-muted-foreground">
+              Taken verschijnen in{" "}
+              <Link href="/jobs" className="underline-offset-4 hover:underline">
+                Scrapingtaken
+              </Link>
+              .
+            </p>
           </CardContent>
         </Card>
 
@@ -226,11 +237,12 @@ export default async function ZoekopdrachtDetailPage({
           <CardHeader>
             <CardTitle className="text-base">Laatste activiteit</CardTitle>
             <CardDescription>
-              Placeholder — workeractiviteit volgt later.
+              Jobvoortgang zie je op de scrape-detailpagina.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Nog geen scrapingactiviteit.
+            Gebruik “Start scrape” om een Pending → Active → Completed flow te
+            draaien met mock-bedrijven.
           </CardContent>
         </Card>
       </div>

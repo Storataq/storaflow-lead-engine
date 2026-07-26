@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { JobStatusBadge } from "@/components/jobs/job-status-badge";
 import { SearchStatusBadge } from "@/components/searches/search-status-badge";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatCountryList } from "@/lib/international/display";
+import { listScrapeJobs } from "@/lib/jobs/queries";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 import { listSearchQueries } from "@/lib/searches/queries";
 
@@ -36,8 +38,21 @@ export default async function DashboardPage() {
         sort: "newest",
       }).catch(() => [])
     : [];
+  const jobs = context
+    ? await listScrapeJobs({
+        organizationId: context.organization.id,
+        sort: "newest",
+      }).catch(() => [])
+    : [];
   const recentSearches = searches.slice(0, 5);
-  const activeCount = searches.filter((item) => item.status === "active").length;
+  const recentJobs = jobs.slice(0, 5);
+  const activeSearchCount = searches.filter(
+    (item) => item.status === "active",
+  ).length;
+  const activeJobs = jobs.filter(
+    (item) => item.status === "queued" || item.status === "running",
+  ).length;
+  const failedJobs = jobs.filter((item) => item.status === "failed").length;
 
   const stats = [
     { label: "Bedrijven", value: "—", icon: Building2 },
@@ -49,11 +64,19 @@ export default async function DashboardPage() {
     },
     {
       label: "Actieve zoekopdrachten",
-      value: String(activeCount),
+      value: String(activeSearchCount),
       icon: CheckCircle2,
     },
-    { label: "Actieve taken", value: "—", icon: ListTodo },
-    { label: "Mislukte taken", value: "—", icon: XCircle },
+    {
+      label: "Actieve taken",
+      value: String(activeJobs),
+      icon: ListTodo,
+    },
+    {
+      label: "Mislukte taken",
+      value: String(failedJobs),
+      icon: XCircle,
+    },
   ] as const;
 
   return (
@@ -137,14 +160,48 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Activity className="size-4" />
-              Recente activiteiten
+              Recente scrapingtaken
             </CardTitle>
             <CardDescription>
-              Acties binnen je organisatie worden hier gelogd.
+              Pending → Active → Completed via de mock-engine.
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Nog geen activiteiten.
+          <CardContent>
+            {recentJobs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nog geen scrapingtaken.{" "}
+                <Link
+                  href="/zoekopdrachten"
+                  className="font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  Start vanaf een zoekopdracht
+                </Link>
+                .
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {recentJobs.map((job) => (
+                  <li
+                    key={job.id}
+                    className="flex items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0 space-y-1">
+                      <Link
+                        href={`/jobs/${job.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {job.search_queries?.name ?? "Scrape-taak"}
+                      </Link>
+                      <p className="text-sm text-muted-foreground">
+                        {job.companies_found} bedrijven · {job.pages_processed}{" "}
+                        pagina&apos;s
+                      </p>
+                    </div>
+                    <JobStatusBadge status={job.status} />
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </div>

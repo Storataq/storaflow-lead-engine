@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Play, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { startScrapeAction } from "@/lib/jobs/actions";
 import { SearchQuerySheet } from "@/components/searches/search-query-sheet";
 import { SearchStatusBadge } from "@/components/searches/search-status-badge";
 import { EmptyState } from "@/components/layout/empty-state";
@@ -197,6 +198,19 @@ export function SearchesManager({
     });
   }
 
+  async function handleStartScrape(item: SearchQueryRow) {
+    const result = await startScrapeAction(item.id);
+    if (!result.success || !result.jobId) {
+      toast.error(result.message);
+      return;
+    }
+    toast.success(result.message);
+    startTransition(() => {
+      router.push(`/jobs/${result.jobId}`);
+      router.refresh();
+    });
+  }
+
   if (initialError) {
     return (
       <Alert variant="destructive">
@@ -333,6 +347,14 @@ export function SearchesManager({
                           <span className="sr-only">Acties</span>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              void handleStartScrape(item);
+                            }}
+                          >
+                            <Play className="size-4" />
+                            Start scrape
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openEdit(item)}>
                             <Pencil className="size-4" />
                             Bewerken
@@ -381,6 +403,13 @@ export function SearchesManager({
                       <MoreHorizontal className="size-4" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          void handleStartScrape(item);
+                        }}
+                      >
+                        Start scrape
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEdit(item)}>
                         Bewerken
                       </DropdownMenuItem>

@@ -4,17 +4,24 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import {
+  FilterableCodeChecklist,
+  toCountryOptions,
+  toLanguageOptions,
+} from "@/components/searches/filterable-code-checklist";
+import {
   createSearchQueryAction,
   updateSearchQueryAction,
   type SearchActionResult,
 } from "@/lib/searches/actions";
 import {
   COMPANY_SIZE_OPTIONS,
-  COUNTRY_OPTIONS,
-  INDUSTRY_OPTIONS,
   SEARCH_CRITERIA_STATUSES,
 } from "@/lib/searches/constants";
 import type { SearchQueryRow } from "@/lib/searches/queries";
+import { COUNTRIES } from "@/lib/international/countries";
+import { INDUSTRIES } from "@/lib/international/industries";
+import { LANGUAGES } from "@/lib/international/languages";
+import { SOURCES } from "@/lib/international/sources";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -40,6 +47,9 @@ type SearchQuerySheetProps = {
 
 const initialState: SearchActionResult | null = null;
 
+const countryOptions = toCountryOptions(COUNTRIES);
+const languageOptions = toLanguageOptions(LANGUAGES);
+
 function SearchQuerySheetForm({
   isEdit,
   initial,
@@ -60,6 +70,10 @@ function SearchQuerySheetForm({
   const [industries, setIndustries] = useState<string[]>(
     initial?.industries ?? [],
   );
+  const [languages, setLanguages] = useState<string[]>(
+    initial?.languages ?? [],
+  );
+  const [sources, setSources] = useState<string[]>(initial?.sources ?? []);
   const [companySize, setCompanySize] = useState<string>(
     initial?.company_size ?? "",
   );
@@ -90,6 +104,14 @@ function SearchQuerySheetForm({
     () => (initial?.keywords ?? []).join("\n"),
     [initial],
   );
+  const regionsText = useMemo(
+    () => (initial?.regions ?? []).join("\n"),
+    [initial],
+  );
+  const citiesText = useMemo(
+    () => (initial?.cities ?? []).join("\n"),
+    [initial],
+  );
 
   return (
     <form action={formAction} className="flex flex-1 flex-col gap-0">
@@ -103,36 +125,95 @@ function SearchQuerySheetForm({
             name="name"
             required
             defaultValue={initial?.name ?? ""}
-            placeholder="Bijv. Bloemisten Zuid-Holland"
+            placeholder="e.g. Florists South Holland"
           />
         </div>
 
         <div className="space-y-2">
-          <Label>Landen *</Label>
-          <div className="grid max-h-40 grid-cols-1 gap-2 overflow-y-auto rounded-lg border border-border p-3 sm:grid-cols-2">
-            {COUNTRY_OPTIONS.map((country) => {
-              const checked = countries.includes(country);
+          <Label htmlFor="search_prompt">Search prompt</Label>
+          <Textarea
+            id="search_prompt"
+            name="search_prompt"
+            rows={3}
+            defaultValue={initial?.search_prompt ?? ""}
+            placeholder="Find florists in Germany with a website"
+          />
+          <p className="text-xs text-muted-foreground">
+            Natural language. Later AI can expand this into structured filters.
+          </p>
+        </div>
+
+        <FilterableCodeChecklist
+          label="Countries"
+          name="countries"
+          required
+          options={countryOptions}
+          selected={countries}
+          onChange={setCountries}
+          searchPlaceholder="Search by country or ISO code…"
+        />
+
+        <div className="space-y-2">
+          <Label htmlFor="regions">Regions / states / provinces</Label>
+          <Textarea
+            id="regions"
+            name="regions"
+            rows={3}
+            defaultValue={regionsText}
+            placeholder={"California\nTexas\nBayern\nVlaanderen\nDubai"}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="cities">Cities</Label>
+          <Textarea
+            id="cities"
+            name="cities"
+            rows={3}
+            defaultValue={citiesText}
+            placeholder={"Amsterdam\nLondon\nDubai\nSingapore"}
+          />
+        </div>
+
+        <FilterableCodeChecklist
+          label="Languages"
+          name="languages"
+          options={languageOptions}
+          selected={languages}
+          onChange={setLanguages}
+          searchPlaceholder="Search by language or ISO code…"
+        />
+
+        <div className="space-y-2">
+          <Label>Industries</Label>
+          <div className="grid max-h-44 grid-cols-1 gap-2 overflow-y-auto rounded-lg border border-border p-3 sm:grid-cols-2">
+            {INDUSTRIES.map((industry) => {
+              const checked = industries.includes(industry.code);
               return (
                 <label
-                  key={country}
+                  key={industry.code}
                   className="flex items-center gap-2 text-sm"
                 >
                   <Checkbox
                     checked={checked}
                     onCheckedChange={(value) => {
                       if (value === true && !checked) {
-                        setCountries([...countries, country]);
+                        setIndustries([...industries, industry.code]);
                       }
                       if (value !== true && checked) {
-                        setCountries(
-                          countries.filter((item) => item !== country),
+                        setIndustries(
+                          industries.filter((item) => item !== industry.code),
                         );
                       }
                     }}
                   />
-                  {country}
+                  {industry.labelEn}
                   {checked ? (
-                    <input type="hidden" name="countries" value={country} />
+                    <input
+                      type="hidden"
+                      name="industries"
+                      value={industry.code}
+                    />
                   ) : null}
                 </label>
               );
@@ -141,31 +222,31 @@ function SearchQuerySheetForm({
         </div>
 
         <div className="space-y-2">
-          <Label>Branches</Label>
-          <div className="grid max-h-40 grid-cols-1 gap-2 overflow-y-auto rounded-lg border border-border p-3 sm:grid-cols-2">
-            {INDUSTRY_OPTIONS.map((industry) => {
-              const checked = industries.includes(industry);
+          <Label>Sources</Label>
+          <div className="grid max-h-44 grid-cols-1 gap-2 overflow-y-auto rounded-lg border border-border p-3 sm:grid-cols-2">
+            {SOURCES.map((source) => {
+              const checked = sources.includes(source.code);
               return (
                 <label
-                  key={industry}
+                  key={source.code}
                   className="flex items-center gap-2 text-sm"
                 >
                   <Checkbox
                     checked={checked}
                     onCheckedChange={(value) => {
                       if (value === true && !checked) {
-                        setIndustries([...industries, industry]);
+                        setSources([...sources, source.code]);
                       }
                       if (value !== true && checked) {
-                        setIndustries(
-                          industries.filter((item) => item !== industry),
+                        setSources(
+                          sources.filter((item) => item !== source.code),
                         );
                       }
                     }}
                   />
-                  {industry}
+                  {source.labelEn}
                   {checked ? (
-                    <input type="hidden" name="industries" value={industry} />
+                    <input type="hidden" name="sources" value={source.code} />
                   ) : null}
                 </label>
               );
@@ -181,15 +262,15 @@ function SearchQuerySheetForm({
             required
             rows={4}
             defaultValue={keywordsText}
-            placeholder={"bloemist\nbloemenzaak\nbloemistenwinkel"}
+            placeholder={"florist\nbloemist\nfleuriste"}
           />
           <p className="text-xs text-muted-foreground">
-            Eén keyword per regel (of gescheiden door komma).
+            One keyword per line. Use local-language terms as needed.
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="company_size">Bedrijfsgrootte</Label>
+          <Label htmlFor="company_size">Company size</Label>
           <select
             id="company_size"
             name="company_size"
@@ -197,7 +278,7 @@ function SearchQuerySheetForm({
             value={companySize}
             onChange={(event) => setCompanySize(event.target.value)}
           >
-            <option value="">Optioneel</option>
+            <option value="">Optional</option>
             {COMPANY_SIZE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -208,7 +289,7 @@ function SearchQuerySheetForm({
 
         <div className="space-y-3 rounded-lg border border-border p-3">
           <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="website_required">Website verplicht</Label>
+            <Label htmlFor="website_required">Website required</Label>
             <Switch
               id="website_required"
               checked={websiteRequired}
@@ -222,7 +303,7 @@ function SearchQuerySheetForm({
           ) : null}
 
           <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="linkedin_required">LinkedIn verplicht</Label>
+            <Label htmlFor="linkedin_required">LinkedIn required</Label>
             <Switch
               id="linkedin_required"
               checked={linkedinRequired}
@@ -293,8 +374,8 @@ export function SearchQuerySheet({
             {isEdit ? "Zoekopdracht bewerken" : "Nieuwe zoekopdracht"}
           </SheetTitle>
           <SheetDescription>
-            Sla zoekcriteria op voor latere scraping. Scraping zelf volgt in
-            fase 3.
+            International search criteria (ISO countries & languages). Scraping
+            follows in a later phase.
           </SheetDescription>
         </SheetHeader>
 

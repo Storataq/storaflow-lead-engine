@@ -41,6 +41,10 @@ import {
   type SearchSortOption,
 } from "@/lib/searches/constants";
 import type { SearchQueryRow } from "@/lib/searches/queries";
+import {
+  formatCountryList,
+  formatIndustryList,
+} from "@/lib/international/display";
 import type { SearchCriteriaStatus } from "@/types/database";
 
 type SearchesManagerProps = {
@@ -59,6 +63,22 @@ function joinPreview(values: string[], empty = "—"): string {
   if (!values.length) return empty;
   if (values.length <= 2) return values.join(", ");
   return `${values.slice(0, 2).join(", ")} +${values.length - 2}`;
+}
+
+function countriesPreview(codes: string[]): string {
+  const labels = formatCountryList(codes);
+  if (labels === "—") return labels;
+  const parts = labels.split(", ");
+  if (parts.length <= 2) return labels;
+  return `${parts.slice(0, 2).join(", ")} +${parts.length - 2}`;
+}
+
+function industriesPreview(codes: string[]): string {
+  const labels = formatIndustryList(codes);
+  if (labels === "—") return labels;
+  const parts = labels.split(", ");
+  if (parts.length <= 2) return labels;
+  return `${parts.slice(0, 2).join(", ")} +${parts.length - 2}`;
 }
 
 export function SearchesManager({
@@ -216,11 +236,11 @@ export function SearchesManager({
               <TableHeader>
                 <TableRow>
                   <TableHead>Naam</TableHead>
-                  <TableHead>Landen</TableHead>
-                  <TableHead>Branches</TableHead>
+                  <TableHead>Countries</TableHead>
+                  <TableHead>Industries</TableHead>
                   <TableHead>Keywords</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Laatst gewijzigd</TableHead>
+                  <TableHead>Updated</TableHead>
                   <TableHead className="w-12 text-right">Acties</TableHead>
                 </TableRow>
               </TableHeader>
@@ -236,10 +256,10 @@ export function SearchesManager({
                       </Link>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {joinPreview(item.countries ?? [])}
+                      {countriesPreview(item.countries ?? [])}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {joinPreview(item.industries ?? [])}
+                      {industriesPreview(item.industries ?? [])}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {joinPreview(item.keywords ?? [])}
@@ -317,10 +337,10 @@ export function SearchesManager({
                   </DropdownMenu>
                 </div>
                 <dl className="mt-3 space-y-1 text-sm text-muted-foreground">
-                  <div>Landen: {joinPreview(item.countries ?? [])}</div>
-                  <div>Branches: {joinPreview(item.industries ?? [])}</div>
+                  <div>Countries: {countriesPreview(item.countries ?? [])}</div>
+                  <div>Industries: {industriesPreview(item.industries ?? [])}</div>
                   <div>Keywords: {joinPreview(item.keywords ?? [])}</div>
-                  <div>Gewijzigd: {formatDate(item.updated_at)}</div>
+                  <div>Updated: {formatDate(item.updated_at)}</div>
                 </dl>
               </div>
             ))}

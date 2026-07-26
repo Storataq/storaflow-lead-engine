@@ -160,6 +160,11 @@ export type Database = {
           countries: string[];
           keywords: string[];
           industries: string[];
+          regions: string[];
+          languages: string[];
+          cities: string[];
+          sources: string[];
+          search_prompt: string | null;
           company_size: string | null;
           website_required: boolean;
           linkedin_required: boolean;
@@ -184,6 +189,11 @@ export type Database = {
           countries?: string[];
           keywords?: string[];
           industries?: string[];
+          regions?: string[];
+          languages?: string[];
+          cities?: string[];
+          sources?: string[];
+          search_prompt?: string | null;
           company_size?: string | null;
           website_required?: boolean;
           linkedin_required?: boolean;

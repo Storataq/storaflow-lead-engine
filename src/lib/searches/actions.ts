@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 import {
-  parseKeywordsFromTextarea,
+  parseListFromTextarea,
   searchQueryFormSchema,
 } from "@/lib/searches/schema";
 import { createClient } from "@/lib/supabase/server";
@@ -24,26 +24,39 @@ function toLegacyScalars(input: {
   countries: string[];
   keywords: string[];
   industries: string[];
+  regions: string[];
+  cities: string[];
 }) {
   return {
     country: input.countries[0] ?? null,
     keyword: input.keywords.join(", "),
     industry: input.industries[0] ?? null,
+    region: input.regions[0] ?? null,
+    city: input.cities[0] ?? null,
   };
 }
 
 function normalizeFormData(formData: FormData) {
   const countries = formData.getAll("countries").map(String).filter(Boolean);
   const industries = formData.getAll("industries").map(String).filter(Boolean);
-  const keywordsRaw = String(formData.get("keywords") ?? "");
-  const keywords = parseKeywordsFromTextarea(keywordsRaw);
+  const languages = formData.getAll("languages").map(String).filter(Boolean);
+  const sources = formData.getAll("sources").map(String).filter(Boolean);
+  const keywords = parseListFromTextarea(String(formData.get("keywords") ?? ""));
+  const regions = parseListFromTextarea(String(formData.get("regions") ?? ""));
+  const cities = parseListFromTextarea(String(formData.get("cities") ?? ""));
+  const searchPromptRaw = String(formData.get("search_prompt") ?? "").trim();
   const companySizeRaw = String(formData.get("company_size") ?? "");
   const status = String(formData.get("status") ?? "draft") as SearchCriteriaStatus;
 
   return {
     name: String(formData.get("name") ?? ""),
+    search_prompt: searchPromptRaw.length > 0 ? searchPromptRaw : null,
     countries,
     industries,
+    languages,
+    sources,
+    regions,
+    cities,
     keywords,
     company_size:
       companySizeRaw === ""
@@ -86,9 +99,14 @@ export async function createSearchQueryAction(
     organization_id: context.organization.id,
     created_by: user.id,
     name: parsed.data.name,
+    search_prompt: parsed.data.search_prompt ?? null,
     countries: parsed.data.countries,
     keywords: parsed.data.keywords,
     industries: parsed.data.industries,
+    regions: parsed.data.regions,
+    languages: parsed.data.languages,
+    cities: parsed.data.cities,
+    sources: parsed.data.sources,
     company_size: parsed.data.company_size ?? null,
     website_required: parsed.data.website_required,
     linkedin_required: parsed.data.linkedin_required,
@@ -158,9 +176,14 @@ export async function updateSearchQueryAction(
   const legacy = toLegacyScalars(parsed.data);
   const payload: SearchQueryUpdate = {
     name: parsed.data.name,
+    search_prompt: parsed.data.search_prompt ?? null,
     countries: parsed.data.countries,
     keywords: parsed.data.keywords,
     industries: parsed.data.industries,
+    regions: parsed.data.regions,
+    languages: parsed.data.languages,
+    cities: parsed.data.cities,
+    sources: parsed.data.sources,
     company_size: parsed.data.company_size ?? null,
     website_required: parsed.data.website_required,
     linkedin_required: parsed.data.linkedin_required,

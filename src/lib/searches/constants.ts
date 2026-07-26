@@ -19,36 +19,8 @@ export const COMPANY_SIZE_OPTIONS: {
   { value: "250+", label: "250+" },
 ];
 
-export const COUNTRY_OPTIONS = [
-  "Nederland",
-  "België",
-  "Duitsland",
-  "Frankrijk",
-  "Verenigd Koninkrijk",
-  "Portugal",
-  "Spanje",
-  "Italië",
-  "Luxemburg",
-  "Oostenrijk",
-  "Zwitserland",
-] as const;
-
-export const INDUSTRY_OPTIONS = [
-  "Retail",
-  "Horeca",
-  "Bouw",
-  "Zakelijke dienstverlening",
-  "IT & software",
-  "Industrie",
-  "Transport & logistiek",
-  "Zorg",
-  "Onderwijs",
-  "Creatief & media",
-  "Groothandel",
-  "Automotive",
-  "Agrarisch",
-  "Overig",
-] as const;
+/** UI display locale for Intl country/language names (data stays ISO codes). */
+export const GEO_DISPLAY_LOCALE = "en";
 
 export type SearchSortOption =
   | "newest"

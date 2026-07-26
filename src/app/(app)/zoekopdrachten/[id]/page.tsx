@@ -14,6 +14,12 @@ import {
 } from "@/components/ui/card";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 import { getSearchQuery } from "@/lib/searches/queries";
+import {
+  formatCountryList,
+  formatIndustryList,
+  formatLanguageList,
+} from "@/lib/international/display";
+import { formatSourceList } from "@/lib/international/sources";
 
 type SearchDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -105,16 +111,40 @@ export default async function ZoekopdrachtDetailPage({
         <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Filters</CardTitle>
-            <CardDescription>Landen, branches en keywords.</CardDescription>
+            <CardDescription>
+              Countries, regions, languages, industries and keywords.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>
-              <p className="mb-1 text-muted-foreground">Landen</p>
-              <p>{(item.countries ?? []).join(", ") || "—"}</p>
+              <p className="mb-1 text-muted-foreground">Search prompt</p>
+              <p className="whitespace-pre-wrap">
+                {item.search_prompt?.trim() ? item.search_prompt : "—"}
+              </p>
             </div>
             <div>
-              <p className="mb-1 text-muted-foreground">Branches</p>
-              <p>{(item.industries ?? []).join(", ") || "—"}</p>
+              <p className="mb-1 text-muted-foreground">Countries</p>
+              <p>{formatCountryList(item.countries ?? [])}</p>
+            </div>
+            <div>
+              <p className="mb-1 text-muted-foreground">Regions</p>
+              <p>{(item.regions ?? []).join(", ") || "—"}</p>
+            </div>
+            <div>
+              <p className="mb-1 text-muted-foreground">Cities</p>
+              <p>{(item.cities ?? []).join(", ") || "—"}</p>
+            </div>
+            <div>
+              <p className="mb-1 text-muted-foreground">Languages</p>
+              <p>{formatLanguageList(item.languages ?? [])}</p>
+            </div>
+            <div>
+              <p className="mb-1 text-muted-foreground">Industries</p>
+              <p>{formatIndustryList(item.industries ?? [])}</p>
+            </div>
+            <div>
+              <p className="mb-1 text-muted-foreground">Sources</p>
+              <p>{formatSourceList(item.sources ?? [])}</p>
             </div>
             <div>
               <p className="mb-1 text-muted-foreground">Keywords</p>

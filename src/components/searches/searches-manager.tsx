@@ -44,7 +44,9 @@ import type { SearchQueryRow } from "@/lib/searches/queries";
 import {
   formatCountryList,
   formatIndustryList,
+  formatLanguageList,
 } from "@/lib/international/display";
+import { formatSourceList } from "@/lib/international/sources";
 import type { SearchCriteriaStatus } from "@/types/database";
 
 type SearchesManagerProps = {
@@ -65,20 +67,55 @@ function joinPreview(values: string[], empty = "—"): string {
   return `${values.slice(0, 2).join(", ")} +${values.length - 2}`;
 }
 
-function countriesPreview(codes: string[]): string {
-  const labels = formatCountryList(codes);
-  if (labels === "—") return labels;
+function previewList(labels: string, empty = "—"): string {
+  if (!labels || labels === "—") return empty;
   const parts = labels.split(", ");
   if (parts.length <= 2) return labels;
   return `${parts.slice(0, 2).join(", ")} +${parts.length - 2}`;
 }
 
+function requirementsPreview(
+  websiteRequired: boolean,
+  linkedinRequired: boolean,
+): string {
+  const parts = [
+    websiteRequired ? "Website" : null,
+    linkedinRequired ? "LinkedIn" : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "—";
+}
+
+function countriesPreview(codes: string[]): string {
+  return previewList(formatCountryList(codes));
+}
+
+function languagesPreview(codes: string[]): string {
+  return previewList(formatLanguageList(codes));
+}
+
+function sourcesPreview(codes: string[]): string {
+  return previewList(formatSourceList(codes));
+}
+
 function industriesPreview(codes: string[]): string {
-  const labels = formatIndustryList(codes);
-  if (labels === "—") return labels;
-  const parts = labels.split(", ");
-  if (parts.length <= 2) return labels;
-  return `${parts.slice(0, 2).join(", ")} +${parts.length - 2}`;
+  return previewList(formatIndustryList(codes));
+}
+
+function matchesSearch(item: SearchQueryRow, needle: string): boolean {
+  const haystack = [
+    item.name,
+    item.search_prompt ?? "",
+    ...(item.keywords ?? []),
+    ...(item.cities ?? []),
+    ...(item.regions ?? []),
+    ...(item.countries ?? []),
+    ...(item.languages ?? []),
+    ...(item.industries ?? []),
+    ...(item.sources ?? []),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(needle);
 }
 
 export function SearchesManager({
@@ -109,7 +146,7 @@ export function SearchesManager({
 
     if (query.trim()) {
       const needle = query.trim().toLowerCase();
-      next = next.filter((item) => item.name.toLowerCase().includes(needle));
+      next = next.filter((item) => matchesSearch(item, needle));
     }
 
     next.sort((a, b) => {
@@ -177,7 +214,7 @@ export function SearchesManager({
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Zoeken op naam…"
+              placeholder="Zoeken op naam, stad, keyword…"
               className="pl-8"
             />
           </div>
@@ -231,13 +268,15 @@ export function SearchesManager({
         </div>
       ) : (
         <>
-          <div className="hidden md:block overflow-hidden rounded-xl border border-border">
+          <div className="hidden overflow-x-auto rounded-xl border border-border lg:block">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Naam</TableHead>
+                  <TableHead>Name</TableHead>
                   <TableHead>Countries</TableHead>
-                  <TableHead>Industries</TableHead>
+                  <TableHead>Cities</TableHead>
+                  <TableHead>Languages</TableHead>
+                  <TableHead>Sources</TableHead>
                   <TableHead>Keywords</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Updated</TableHead>
@@ -248,18 +287,31 @@ export function SearchesManager({
                 {filtered.map((item) => (
                   <TableRow key={item.id} className="group">
                     <TableCell>
-                      <Link
-                        href={`/zoekopdrachten/${item.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {item.name}
-                      </Link>
+                      <div className="space-y-0.5">
+                        <Link
+                          href={`/zoekopdrachten/${item.id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {item.name}
+                        </Link>
+                        {item.search_prompt ? (
+                          <p className="line-clamp-1 max-w-56 text-xs text-muted-foreground">
+                            {item.search_prompt}
+                          </p>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {countriesPreview(item.countries ?? [])}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {industriesPreview(item.industries ?? [])}
+                      {joinPreview(item.cities ?? [])}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {languagesPreview(item.languages ?? [])}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {sourcesPreview(item.sources ?? [])}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {joinPreview(item.keywords ?? [])}
@@ -301,7 +353,7 @@ export function SearchesManager({
             </Table>
           </div>
 
-          <div className="grid gap-3 md:hidden">
+          <div className="grid gap-3 lg:hidden">
             {filtered.map((item) => (
               <div
                 key={item.id}
@@ -316,6 +368,11 @@ export function SearchesManager({
                       {item.name}
                     </Link>
                     <SearchStatusBadge status={item.status} />
+                    {item.search_prompt ? (
+                      <p className="line-clamp-2 text-xs text-muted-foreground">
+                        {item.search_prompt}
+                      </p>
+                    ) : null}
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger
@@ -338,9 +395,23 @@ export function SearchesManager({
                 </div>
                 <dl className="mt-3 space-y-1 text-sm text-muted-foreground">
                   <div>Countries: {countriesPreview(item.countries ?? [])}</div>
+                  <div>Cities: {joinPreview(item.cities ?? [])}</div>
+                  <div>Regions: {joinPreview(item.regions ?? [])}</div>
+                  <div>Languages: {languagesPreview(item.languages ?? [])}</div>
                   <div>Industries: {industriesPreview(item.industries ?? [])}</div>
+                  <div>Sources: {sourcesPreview(item.sources ?? [])}</div>
                   <div>Keywords: {joinPreview(item.keywords ?? [])}</div>
-                  <div>Updated: {formatDate(item.updated_at)}</div>
+                  <div>
+                    Requirements:{" "}
+                    {requirementsPreview(
+                      item.website_required,
+                      item.linkedin_required,
+                    )}
+                  </div>
+                  <div>
+                    Size: {item.company_size ?? "—"} · Updated:{" "}
+                    {formatDate(item.updated_at)}
+                  </div>
                 </dl>
               </div>
             ))}

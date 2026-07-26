@@ -5,12 +5,12 @@ import {
   CheckCircle2,
   ListTodo,
   Mail,
-  Plus,
   Search,
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
 
+import { SearchStatusBadge } from "@/components/searches/search-status-badge";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,21 +20,42 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { formatCountryList } from "@/lib/international/display";
+import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
+import { listSearchQueries } from "@/lib/searches/queries";
 
 export const metadata: Metadata = {
   title: "Dashboard",
 };
 
-const stats = [
-  { label: "Bedrijven", value: "—", icon: Building2 },
-  { label: "Contactgegevens", value: "—", icon: Mail },
-  { label: "Nieuw vandaag", value: "—", icon: Plus },
-  { label: "Actieve taken", value: "—", icon: ListTodo },
-  { label: "Voltooide taken", value: "—", icon: CheckCircle2 },
-  { label: "Mislukte taken", value: "—", icon: XCircle },
-] as const;
+export default async function DashboardPage() {
+  const context = await getActiveOrganization();
+  const searches = context
+    ? await listSearchQueries({
+        organizationId: context.organization.id,
+        sort: "newest",
+      }).catch(() => [])
+    : [];
+  const recentSearches = searches.slice(0, 5);
+  const activeCount = searches.filter((item) => item.status === "active").length;
 
-export default function DashboardPage() {
+  const stats = [
+    { label: "Bedrijven", value: "—", icon: Building2 },
+    { label: "Contactgegevens", value: "—", icon: Mail },
+    {
+      label: "Zoekopdrachten",
+      value: String(searches.length),
+      icon: Search,
+    },
+    {
+      label: "Actieve zoekopdrachten",
+      value: String(activeCount),
+      icon: CheckCircle2,
+    },
+    { label: "Actieve taken", value: "—", icon: ListTodo },
+    { label: "Mislukte taken", value: "—", icon: XCircle },
+  ] as const;
+
   return (
     <div>
       <PageHeader
@@ -72,11 +93,44 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-base">Laatste zoekopdrachten</CardTitle>
             <CardDescription>
-              Zoekopdrachten verschijnen hier zodra je de eerste aanmaakt.
+              Recente internationale zoekcriteria voor je organisatie.
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Nog geen zoekopdrachten.
+          <CardContent>
+            {recentSearches.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nog geen zoekopdrachten.{" "}
+                <Link
+                  href="/zoekopdrachten"
+                  className="font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  Maak er een aan
+                </Link>
+                .
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {recentSearches.map((item) => (
+                  <li key={item.id} className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-1">
+                      <Link
+                        href={`/zoekopdrachten/${item.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {item.name}
+                      </Link>
+                      <p className="truncate text-sm text-muted-foreground">
+                        {formatCountryList(item.countries ?? [])}
+                        {(item.keywords ?? []).length > 0
+                          ? ` · ${(item.keywords ?? []).slice(0, 2).join(", ")}`
+                          : ""}
+                      </p>
+                    </div>
+                    <SearchStatusBadge status={item.status} />
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
         <Card className="shadow-none">

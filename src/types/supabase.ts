@@ -7,6 +7,10 @@ import type {
   CompanyStatus,
   ContactType,
   ContactVerificationStatus,
+  CrmDealStatus,
+  CrmLeadStatus,
+  CrmTaskPriority,
+  CrmTaskStatus,
   ExclusionType,
   OrganizationRole,
   ScrapeJobLogLevel,
@@ -576,6 +580,218 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["export_runs"]["Insert"]>;
         Relationships: [];
       };
+      crm_pipelines: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          slug: string;
+          description: string | null;
+          color: string;
+          is_default: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          slug: string;
+          description?: string | null;
+          color?: string;
+          is_default?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["crm_pipelines"]["Insert"]>;
+        Relationships: [];
+      };
+      crm_funnel_stages: {
+        Row: {
+          id: string;
+          organization_id: string;
+          pipeline_id: string;
+          name: string;
+          slug: string;
+          color: string;
+          sort_order: number;
+          is_won: boolean;
+          is_lost: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          pipeline_id: string;
+          name: string;
+          slug: string;
+          color?: string;
+          sort_order?: number;
+          is_won?: boolean;
+          is_lost?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["crm_funnel_stages"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      crm_leads: {
+        Row: {
+          id: string;
+          organization_id: string;
+          pipeline_id: string;
+          stage_id: string;
+          company_id: string | null;
+          company_name: string;
+          contact_name: string | null;
+          email: string | null;
+          phone: string | null;
+          website: string | null;
+          country: string | null;
+          city: string | null;
+          industry: string | null;
+          owner_user_id: string | null;
+          source: string | null;
+          lead_score: number;
+          status: CrmLeadStatus;
+          tags: string[];
+          notes: string | null;
+          deal_value: number;
+          currency: string;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          pipeline_id: string;
+          stage_id: string;
+          company_id?: string | null;
+          company_name: string;
+          contact_name?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          website?: string | null;
+          country?: string | null;
+          city?: string | null;
+          industry?: string | null;
+          owner_user_id?: string | null;
+          source?: string | null;
+          lead_score?: number;
+          status?: CrmLeadStatus;
+          tags?: string[];
+          notes?: string | null;
+          deal_value?: number;
+          currency?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["crm_leads"]["Insert"]>;
+        Relationships: [];
+      };
+      crm_deals: {
+        Row: {
+          id: string;
+          organization_id: string;
+          lead_id: string | null;
+          pipeline_id: string;
+          stage_id: string;
+          title: string;
+          value: number;
+          currency: string;
+          status: CrmDealStatus;
+          expected_close_date: string | null;
+          owner_user_id: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          lead_id?: string | null;
+          pipeline_id: string;
+          stage_id: string;
+          title: string;
+          value?: number;
+          currency?: string;
+          status?: CrmDealStatus;
+          expected_close_date?: string | null;
+          owner_user_id?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["crm_deals"]["Insert"]>;
+        Relationships: [];
+      };
+      crm_tasks: {
+        Row: {
+          id: string;
+          organization_id: string;
+          lead_id: string | null;
+          deal_id: string | null;
+          title: string;
+          description: string | null;
+          due_at: string | null;
+          priority: CrmTaskPriority;
+          status: CrmTaskStatus;
+          assigned_user_id: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          lead_id?: string | null;
+          deal_id?: string | null;
+          title: string;
+          description?: string | null;
+          due_at?: string | null;
+          priority?: CrmTaskPriority;
+          status?: CrmTaskStatus;
+          assigned_user_id?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["crm_tasks"]["Insert"]>;
+        Relationships: [];
+      };
+      crm_notes: {
+        Row: {
+          id: string;
+          organization_id: string;
+          lead_id: string | null;
+          deal_id: string | null;
+          body_html: string;
+          body_text: string;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          lead_id?: string | null;
+          deal_id?: string | null;
+          body_html?: string;
+          body_text?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["crm_notes"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -598,6 +814,10 @@ export type Database = {
       contact_type: ContactType;
       contact_verification_status: ContactVerificationStatus;
       exclusion_type: ExclusionType;
+      crm_lead_status: CrmLeadStatus;
+      crm_deal_status: CrmDealStatus;
+      crm_task_priority: CrmTaskPriority;
+      crm_task_status: CrmTaskStatus;
     };
     CompositeTypes: Record<string, never>;
   };

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ConvertCompanyToLeadButton } from "@/components/crm/convert-company-to-lead-button";
 import { TruncatedText } from "@/components/layout/truncated-text";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -84,13 +85,16 @@ export default async function CompanyDetailPage({
           { label: company.company_name },
         ]}
         actions={
-          <Button
-            nativeButton={false}
-            variant="outline"
-            render={<Link href="/companies" />}
-          >
-            Terug naar overzicht
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <ConvertCompanyToLeadButton companyId={company.id} />
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link href="/companies" />}
+            >
+              Terug naar overzicht
+            </Button>
+          </div>
         }
       />
 

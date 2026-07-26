@@ -77,6 +77,14 @@ export type ExclusionType =
   | "keyword"
   | "country";
 
+export type CrmLeadStatus = "open" | "won" | "lost" | "archived";
+
+export type CrmDealStatus = "open" | "won" | "lost";
+
+export type CrmTaskPriority = "low" | "normal" | "high" | "urgent";
+
+export type CrmTaskStatus = "todo" | "in_progress" | "done" | "cancelled";
+
 export type Profile = {
   id: string;
   user_id: string;

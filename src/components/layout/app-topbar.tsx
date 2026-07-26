@@ -70,26 +70,49 @@ export function AppTopbar({
               <SheetTitle>{APP_NAME}</SheetTitle>
               <p className="text-xs text-muted-foreground">{organizationName}</p>
             </SheetHeader>
-            <nav className="flex flex-col gap-1 p-3">
+            <nav className="flex max-h-[80vh] flex-col gap-1 overflow-y-auto p-3">
               {NAV_ITEMS.map((item) => {
                 const Icon = navIconMap[item.icon as NavIconName];
                 const active =
                   pathname === item.href ||
                   pathname.startsWith(`${item.href}/`);
+
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm",
-                      active
-                        ? "bg-accent font-medium"
-                        : "text-muted-foreground hover:bg-accent/70",
-                    )}
-                  >
-                    <Icon className="size-4" />
-                    {item.label}
-                  </Link>
+                  <div key={item.href} className="space-y-1">
+                    <Link
+                      href={item.children?.[0]?.href ?? item.href}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm",
+                        active
+                          ? "bg-accent font-medium"
+                          : "text-muted-foreground hover:bg-accent/70",
+                      )}
+                    >
+                      <Icon className="size-4" />
+                      {item.label}
+                    </Link>
+                    {item.children?.map((child) => {
+                      const ChildIcon = navIconMap[child.icon as NavIconName];
+                      const childActive =
+                        pathname === child.href ||
+                        pathname.startsWith(`${child.href}/`);
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={cn(
+                            "ml-4 flex items-center gap-2 rounded-md px-3 py-1.5 text-sm",
+                            childActive
+                              ? "bg-accent font-medium"
+                              : "text-muted-foreground hover:bg-accent/70",
+                          )}
+                        >
+                          <ChildIcon className="size-3.5" />
+                          {child.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 );
               })}
             </nav>

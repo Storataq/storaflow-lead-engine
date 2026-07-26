@@ -5,8 +5,34 @@ export const APP_DESCRIPTION =
 export const DEFAULT_USER_AGENT =
   "StorataQ-LeadEngine/0.1 (+internal; respectful-crawler)";
 
-export const NAV_ITEMS = [
+export type NavChild = {
+  href: string;
+  label: string;
+  icon: string;
+};
+
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: string;
+  children?: readonly NavChild[];
+};
+
+export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
+  {
+    href: "/crm",
+    label: "CRM",
+    icon: "Kanban",
+    children: [
+      { href: "/crm/pipelines", label: "Pipelines", icon: "GitBranch" },
+      { href: "/crm/funnels", label: "Funnels", icon: "Filter" },
+      { href: "/crm/leads", label: "Leads", icon: "Users" },
+      { href: "/crm/deals", label: "Deals", icon: "Handshake" },
+      { href: "/crm/tasks", label: "Taken", icon: "CheckSquare" },
+      { href: "/crm/notes", label: "Notities", icon: "StickyNote" },
+    ],
+  },
   { href: "/zoekopdrachten", label: "Zoekopdrachten", icon: "Search" },
   { href: "/jobs", label: "Scrape Jobs", icon: "ListTodo" },
   { href: "/connectors", label: "Connectors", icon: "Plug" },

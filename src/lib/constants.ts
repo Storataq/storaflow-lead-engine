@@ -32,6 +32,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
       { href: "/crm/tasks", label: "Taken", icon: "CheckSquare" },
       { href: "/crm/notes", label: "Notities", icon: "StickyNote" },
       { href: "/crm/qualification", label: "Lead Qualification", icon: "Target" },
+      { href: "/crm/opportunities", label: "Opportunity Insights", icon: "Lightbulb" },
       { href: "/crm/intelligence", label: "Company Intelligence", icon: "Sparkles" },
       { href: "/crm/intelligence/sources", label: "Sources", icon: "Radar" },
     ],

@@ -11,7 +11,7 @@ import {
 } from "@/lib/jobs/queries";
 
 export const metadata: Metadata = {
-  title: "Scrapingtaken",
+  title: "Scrape Jobs",
 };
 
 async function JobsContent() {
@@ -51,11 +51,11 @@ export default function JobsPage() {
   return (
     <div>
       <PageHeader
-        title="Scrapingtaken"
-        description="Queue van Pending, Active, Completed, Failed en Paused scrapes (mock-engine)."
+        title="Scrape Jobs"
+        description="Queue: Waiting, Running, Paused, Completed, Failed — mock connector foundation."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
-          { label: "Scrapingtaken" },
+          { label: "Scrape Jobs" },
         ]}
       />
       <Suspense fallback={<JobsLoading />}>

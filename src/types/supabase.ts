@@ -9,8 +9,10 @@ import type {
   ContactVerificationStatus,
   ExclusionType,
   OrganizationRole,
+  ScrapeJobLogLevel,
   ScrapeJobStatus,
   ScrapeJobType,
+  ScrapeResultStatus,
   ScrapeSourceType,
   SearchQueryStatus,
 } from "@/types/database";
@@ -218,6 +220,12 @@ export type Database = {
           contacts_found: number;
           claimed_at: string | null;
           claimed_by: string | null;
+          progress_percent: number;
+          current_source_code: string | null;
+          error_count: number;
+          target_pages: number;
+          runtime_ms: number | null;
+          last_heartbeat_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -235,6 +243,12 @@ export type Database = {
           contacts_found?: number;
           claimed_at?: string | null;
           claimed_by?: string | null;
+          progress_percent?: number;
+          current_source_code?: string | null;
+          error_count?: number;
+          target_pages?: number;
+          runtime_ms?: number | null;
+          last_heartbeat_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -391,6 +405,70 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["company_sources"]["Insert"]>;
+        Relationships: [];
+      };
+      scrape_job_logs: {
+        Row: {
+          id: string;
+          organization_id: string;
+          scrape_job_id: string;
+          level: ScrapeJobLogLevel;
+          event_code: string;
+          message: string;
+          source_code: string | null;
+          metadata_json: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          scrape_job_id: string;
+          level?: ScrapeJobLogLevel;
+          event_code: string;
+          message: string;
+          source_code?: string | null;
+          metadata_json?: Json;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["scrape_job_logs"]["Insert"]>;
+        Relationships: [];
+      };
+      scrape_results: {
+        Row: {
+          id: string;
+          organization_id: string;
+          scrape_job_id: string;
+          source_code: string;
+          company_name: string;
+          website_url: string | null;
+          city: string | null;
+          region: string | null;
+          country: string | null;
+          industry: string | null;
+          raw_payload: Json;
+          company_id: string | null;
+          status: ScrapeResultStatus;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          scrape_job_id: string;
+          source_code: string;
+          company_name: string;
+          website_url?: string | null;
+          city?: string | null;
+          region?: string | null;
+          country?: string | null;
+          industry?: string | null;
+          raw_payload?: Json;
+          company_id?: string | null;
+          status?: ScrapeResultStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["scrape_results"]["Insert"]>;
         Relationships: [];
       };
       exclusion_list: {

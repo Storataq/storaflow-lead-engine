@@ -5,19 +5,32 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { advanceMockScrapeAction, pauseScrapeAction } from "@/lib/jobs/actions";
+import {
+  advanceMockScrapeAction,
+  cancelScrapeAction,
+  pauseScrapeAction,
+  resumeScrapeAction,
+  retryScrapeAction,
+} from "@/lib/jobs/actions";
+import { normalizeJobStatus } from "@/lib/jobs/constants";
 import type { ScrapeJobStatus } from "@/types/database";
 
 type JobRunnerControlsProps = {
   jobId: string;
   status: ScrapeJobStatus;
+  /** When true, also show Start is handled elsewhere — this is lifecycle controls */
+  showAdvanceHint?: boolean;
 };
 
-export function JobRunnerControls({ jobId, status }: JobRunnerControlsProps) {
+export function JobRunnerControls({
+  jobId,
+  status,
+}: JobRunnerControlsProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const advancingRef = useRef(false);
-  const isOpen = status === "queued" || status === "running";
+  const normalized = normalizeJobStatus(status);
+  const isOpen = normalized === "pending" || normalized === "queued" || normalized === "active";
 
   useEffect(() => {
     if (!isOpen) return;
@@ -32,6 +45,7 @@ export function JobRunnerControls({ jobId, status }: JobRunnerControlsProps) {
         const result = await advanceMockScrapeAction(jobId);
         if (!result.success) {
           toast.error(result.message);
+          startTransition(() => router.refresh());
           return;
         }
         startTransition(() => {
@@ -59,38 +73,90 @@ export function JobRunnerControls({ jobId, status }: JobRunnerControlsProps) {
     };
   }, [jobId, isOpen, router]);
 
-  async function handlePause() {
-    const result = await pauseScrapeAction(jobId);
+  async function run(
+    action: (id: string) => Promise<{ success: boolean; message: string; jobId?: string }>,
+  ) {
+    const result = await action(jobId);
     if (!result.success) {
       toast.error(result.message);
       return;
     }
     toast.success(result.message);
+    if (result.jobId && result.jobId !== jobId) {
+      startTransition(() => {
+        router.push(`/jobs/${result.jobId}`);
+        router.refresh();
+      });
+      return;
+    }
     startTransition(() => {
       router.refresh();
     });
   }
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <p className="text-sm text-muted-foreground">
-        Mock-engine verwerkt pagina&apos;s…
-      </p>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={pending}
-        onClick={() => {
-          void handlePause();
-        }}
-      >
-        Pauzeren
-      </Button>
+      {isOpen ? (
+        <p className="mr-2 text-sm text-muted-foreground">
+          Mock-engine verwerkt…
+        </p>
+      ) : null}
+
+      {normalized === "pending" ||
+      normalized === "queued" ||
+      normalized === "active" ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={pending}
+          onClick={() => {
+            void run(pauseScrapeAction);
+          }}
+        >
+          Pause
+        </Button>
+      ) : null}
+
+      {normalized === "paused" ? (
+        <Button
+          type="button"
+          size="sm"
+          disabled={pending}
+          onClick={() => {
+            void run(resumeScrapeAction);
+          }}
+        >
+          Resume
+        </Button>
+      ) : null}
+
+      {!["completed", "cancelled", "failed"].includes(normalized) ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={pending}
+          onClick={() => {
+            void run(cancelScrapeAction);
+          }}
+        >
+          Cancel
+        </Button>
+      ) : null}
+
+      {["failed", "cancelled", "paused", "completed"].includes(normalized) ? (
+        <Button
+          type="button"
+          size="sm"
+          disabled={pending}
+          onClick={() => {
+            void run(retryScrapeAction);
+          }}
+        >
+          Retry
+        </Button>
+      ) : null}
     </div>
   );
 }

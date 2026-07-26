@@ -1,23 +1,28 @@
-import { jobProgressPercent } from "@/lib/jobs/constants";
+import {
+  jobProgressPercent,
+  MOCK_SCRAPE_TARGET_PAGES,
+} from "@/lib/jobs/constants";
 import { cn } from "@/lib/utils";
 
 type JobProgressBarProps = {
   pagesProcessed: number;
   targetPages?: number;
+  progressPercent?: number | null;
   status?: string;
   className?: string;
 };
 
 export function JobProgressBar({
   pagesProcessed,
-  targetPages,
+  targetPages = MOCK_SCRAPE_TARGET_PAGES,
+  progressPercent,
   status,
   className,
 }: JobProgressBarProps) {
   const percent =
     status === "completed" || status === "partially_completed"
       ? 100
-      : jobProgressPercent(pagesProcessed, targetPages);
+      : jobProgressPercent(pagesProcessed, targetPages, progressPercent);
 
   return (
     <div className={cn("space-y-1", className)}>
@@ -31,7 +36,7 @@ export function JobProgressBar({
             "h-full rounded-full transition-all duration-500",
             status === "failed"
               ? "bg-destructive"
-              : status === "cancelled"
+              : status === "cancelled" || status === "paused"
                 ? "bg-zinc-400"
                 : "bg-primary",
           )}

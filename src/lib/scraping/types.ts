@@ -1,6 +1,6 @@
 /**
- * Scraping interfaces — fase 1 stubs.
- * Geen actieve scraper-implementatie in deze fase.
+ * Scraping domain types.
+ * Executable discovery lives in `src/lib/scraping/connectors` (mock only in this phase).
  */
 
 export type SearchInput = {

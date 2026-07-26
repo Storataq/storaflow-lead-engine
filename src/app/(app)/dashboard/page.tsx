@@ -49,9 +49,15 @@ export default async function DashboardPage() {
   const activeSearchCount = searches.filter(
     (item) => item.status === "active",
   ).length;
-  const activeJobs = jobs.filter(
-    (item) => item.status === "queued" || item.status === "running",
-  ).length;
+  const activeJobs = jobs.filter((item) => {
+    const s = item.status;
+    return (
+      s === "pending" ||
+      s === "queued" ||
+      s === "active" ||
+      s === "running"
+    );
+  }).length;
   const failedJobs = jobs.filter((item) => item.status === "failed").length;
 
   const stats = [

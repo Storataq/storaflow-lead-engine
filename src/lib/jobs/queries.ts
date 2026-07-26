@@ -5,6 +5,10 @@ import type { Database } from "@/types/supabase";
 
 export type ScrapeJobRow = Database["public"]["Tables"]["scrape_jobs"]["Row"];
 export type CompanyRow = Database["public"]["Tables"]["companies"]["Row"];
+export type ScrapeJobLogRow =
+  Database["public"]["Tables"]["scrape_job_logs"]["Row"];
+export type ScrapeResultRow =
+  Database["public"]["Tables"]["scrape_results"]["Row"];
 
 export type ScrapeJobWithSearch = ScrapeJobRow & {
   search_queries: { id: string; name: string } | null;
@@ -131,6 +135,48 @@ export async function listCompaniesForJob(
     .eq("organization_id", organizationId)
     .in("id", companyIds)
     .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ?? [];
+}
+
+export async function listJobLogs(
+  organizationId: string,
+  jobId: string,
+  limit = 100,
+): Promise<ScrapeJobLogRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("scrape_job_logs")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("scrape_job_id", jobId)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ?? [];
+}
+
+export async function listJobResults(
+  organizationId: string,
+  jobId: string,
+  limit = 100,
+): Promise<ScrapeResultRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("scrape_results")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("scrape_job_id", jobId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
 
   if (error) {
     throw new Error(error.message);

@@ -10,6 +10,7 @@ import type {
   ExclusionType,
   OrganizationRole,
   ScrapeJobLogLevel,
+  ScrapeJobPriority,
   ScrapeJobStatus,
   ScrapeJobType,
   ScrapeResultStatus,
@@ -224,6 +225,9 @@ export type Database = {
           current_source_code: string | null;
           error_count: number;
           target_pages: number;
+          pages_total: number;
+          priority: ScrapeJobPriority;
+          retry_count: number;
           runtime_ms: number | null;
           last_heartbeat_at: string | null;
           created_at: string;
@@ -247,6 +251,9 @@ export type Database = {
           current_source_code?: string | null;
           error_count?: number;
           target_pages?: number;
+          pages_total?: number;
+          priority?: ScrapeJobPriority;
+          retry_count?: number;
           runtime_ms?: number | null;
           last_heartbeat_at?: string | null;
           created_at?: string;

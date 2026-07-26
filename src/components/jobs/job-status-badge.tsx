@@ -4,6 +4,7 @@ import type { ScrapeJobStatus } from "@/types/database";
 import { cn } from "@/lib/utils";
 
 const statusClassName: Record<string, string> = {
+  draft: "border-transparent bg-slate-100 text-slate-700",
   pending: "border-transparent bg-amber-50 text-amber-900",
   queued: "border-transparent bg-amber-100 text-amber-900",
   active: "border-transparent bg-sky-100 text-sky-900",

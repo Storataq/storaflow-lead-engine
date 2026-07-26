@@ -2,20 +2,23 @@
 
 import { revalidatePath } from "next/cache";
 
-import {
-  DEFAULT_CONNECTOR_CODE,
-  MOCK_COMPANIES_PER_PAGE,
-  MOCK_ENGINE_CLAIM,
-  MOCK_SCRAPE_TARGET_PAGES,
-  computeRuntimeMs,
-  jobProgressPercent,
-  normalizeJobStatus,
-} from "@/lib/jobs/constants";
 import { appendJobLog } from "@/lib/jobs/logging";
+import {
+  cancel as queueCancel,
+  createDraftJob,
+  dequeue,
+  enqueue,
+  fail as queueFail,
+  pause as queuePause,
+  resume as queueResume,
+  retry as queueRetry,
+  complete as queueComplete,
+} from "@/lib/jobs/queue-service";
+import { resolveWorkerForJob } from "@/lib/jobs/workers";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 import { resolveJobConnector } from "@/lib/scraping/connectors";
 import { createClient } from "@/lib/supabase/server";
-import type { ScrapeJobStatus } from "@/types/database";
+import type { ScrapeJobPriority } from "@/types/database";
 
 export type JobActionResult = {
   success: boolean;
@@ -50,6 +53,7 @@ function domainFromUrl(url: string | undefined): string | null {
 
 export async function startScrapeAction(
   searchQueryId: string,
+  priority: ScrapeJobPriority = "NORMAL",
 ): Promise<JobActionResult> {
   const context = await getActiveOrganization();
   if (!context) {
@@ -73,72 +77,61 @@ export async function startScrapeAction(
     return { success: false, message: "Zoekopdracht niet gevonden." };
   }
 
-  const preferredSources = searchQuery.sources ?? [];
-  const connector = resolveJobConnector(preferredSources);
+  const connector = resolveJobConnector(searchQuery.sources ?? []);
 
-  const { data: job, error: insertError } = await supabase
-    .from("scrape_jobs")
-    .insert({
-      organization_id: orgId,
-      search_query_id: searchQuery.id,
-      job_type: "search_discovery",
-      status: "pending",
-      pages_processed: 0,
-      companies_found: 0,
-      contacts_found: 0,
-      progress_percent: 0,
-      error_count: 0,
-      target_pages: MOCK_SCRAPE_TARGET_PAGES,
-      current_source_code: connector.manifest.code,
-      error_message: null,
-    })
-    .select("id")
-    .single();
+  try {
+    const draft = await createDraftJob(supabase, {
+      organizationId: orgId,
+      searchQueryId: searchQuery.id,
+      sourceCode: connector.manifest.code,
+      priority,
+    });
 
-  if (insertError || !job) {
+    const queued = await enqueue(supabase, orgId, draft.id);
+    if (!queued.success || !queued.job) {
+      return {
+        success: false,
+        message: queued.message,
+        jobId: draft.id,
+      };
+    }
+
+    revalidateJobPaths(queued.job.id, searchQueryId);
+    return {
+      success: true,
+      message: "Scrape job queued.",
+      jobId: queued.job.id,
+      status: "queued",
+    };
+  } catch (error) {
     return {
       success: false,
-      message: insertError?.message ?? "Kon scrape-taak niet aanmaken.",
+      message: error instanceof Error ? error.message : "Kon job niet starten.",
     };
   }
+}
 
-  await appendJobLog(supabase, {
-    organizationId: orgId,
-    jobId: job.id,
-    eventCode: "job_created",
-    message: "Job created",
-    sourceCode: connector.manifest.code,
-    metadata: { searchQueryId, connector: connector.manifest.code },
-  });
-
-  const { error: queueError } = await supabase
-    .from("scrape_jobs")
-    .update({
-      status: "queued",
-      last_heartbeat_at: new Date().toISOString(),
-    })
-    .eq("id", job.id)
-    .eq("organization_id", orgId);
-
-  if (queueError) {
-    return { success: false, message: queueError.message, jobId: job.id };
+/** Start / enqueue an existing draft or pending job. */
+export async function startExistingJobAction(
+  jobId: string,
+): Promise<JobActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) {
+    return { success: false, message: "Geen actieve organisatie." };
   }
 
-  await appendJobLog(supabase, {
-    organizationId: orgId,
-    jobId: job.id,
-    eventCode: "queue_started",
-    message: "Queue started",
-    sourceCode: connector.manifest.code,
-  });
+  const supabase = await createClient();
+  const result = await enqueue(supabase, context.organization.id, jobId);
+  if (!result.success || !result.job) {
+    return { success: false, message: result.message, jobId };
+  }
 
-  revalidateJobPaths(job.id, searchQueryId);
-
+  revalidateJobPaths(jobId, result.job.search_query_id);
   return {
     success: true,
-    message: "Scrape-taak in queue (Queued).",
-    jobId: job.id,
-    status: "queued",
+    message: result.message,
+    jobId,
+    status: result.job.status,
   };
 }
 
@@ -149,52 +142,15 @@ export async function pauseScrapeAction(jobId: string): Promise<JobActionResult>
   }
 
   const supabase = await createClient();
-  const orgId = context.organization.id;
-
-  const { data: job, error } = await supabase
-    .from("scrape_jobs")
-    .select("*")
-    .eq("organization_id", orgId)
-    .eq("id", jobId)
-    .maybeSingle();
-
-  if (error) return { success: false, message: error.message };
-  if (!job) return { success: false, message: "Taak niet gevonden." };
-
-  const status = normalizeJobStatus(job.status);
-  if (!["pending", "queued", "active"].includes(status)) {
-    return {
-      success: false,
-      message: "Alleen Waiting/Active taken kunnen worden gepauzeerd.",
-    };
+  const result = await queuePause(supabase, context.organization.id, jobId);
+  if (!result.success || !result.job) {
+    return { success: false, message: result.message, jobId };
   }
 
-  const runtimeMs = computeRuntimeMs(job.started_at);
-  const { error: updateError } = await supabase
-    .from("scrape_jobs")
-    .update({
-      status: "paused",
-      runtime_ms: runtimeMs,
-      last_heartbeat_at: new Date().toISOString(),
-      error_message: null,
-    })
-    .eq("id", jobId)
-    .eq("organization_id", orgId);
-
-  if (updateError) return { success: false, message: updateError.message };
-
-  await appendJobLog(supabase, {
-    organizationId: orgId,
-    jobId,
-    eventCode: "job_paused",
-    message: "Paused",
-    sourceCode: job.current_source_code,
-  });
-
-  revalidateJobPaths(jobId, job.search_query_id);
+  revalidateJobPaths(jobId, result.job.search_query_id);
   return {
     success: true,
-    message: "Scrape gepauzeerd.",
+    message: result.message,
     jobId,
     status: "paused",
     done: true,
@@ -208,46 +164,15 @@ export async function resumeScrapeAction(jobId: string): Promise<JobActionResult
   }
 
   const supabase = await createClient();
-  const orgId = context.organization.id;
-
-  const { data: job, error } = await supabase
-    .from("scrape_jobs")
-    .select("*")
-    .eq("organization_id", orgId)
-    .eq("id", jobId)
-    .maybeSingle();
-
-  if (error) return { success: false, message: error.message };
-  if (!job) return { success: false, message: "Taak niet gevonden." };
-
-  if (normalizeJobStatus(job.status) !== "paused") {
-    return { success: false, message: "Alleen gepauzeerde taken kunnen hervatten." };
+  const result = await queueResume(supabase, context.organization.id, jobId);
+  if (!result.success || !result.job) {
+    return { success: false, message: result.message, jobId };
   }
 
-  const { error: updateError } = await supabase
-    .from("scrape_jobs")
-    .update({
-      status: "queued",
-      completed_at: null,
-      last_heartbeat_at: new Date().toISOString(),
-    })
-    .eq("id", jobId)
-    .eq("organization_id", orgId);
-
-  if (updateError) return { success: false, message: updateError.message };
-
-  await appendJobLog(supabase, {
-    organizationId: orgId,
-    jobId,
-    eventCode: "job_resumed",
-    message: "Resumed — back in queue",
-    sourceCode: job.current_source_code,
-  });
-
-  revalidateJobPaths(jobId, job.search_query_id);
+  revalidateJobPaths(jobId, result.job.search_query_id);
   return {
     success: true,
-    message: "Scrape hervat (Queued).",
+    message: result.message,
     jobId,
     status: "queued",
     done: false,
@@ -261,53 +186,15 @@ export async function cancelScrapeAction(jobId: string): Promise<JobActionResult
   }
 
   const supabase = await createClient();
-  const orgId = context.organization.id;
-
-  const { data: job, error } = await supabase
-    .from("scrape_jobs")
-    .select("*")
-    .eq("organization_id", orgId)
-    .eq("id", jobId)
-    .maybeSingle();
-
-  if (error) return { success: false, message: error.message };
-  if (!job) return { success: false, message: "Taak niet gevonden." };
-
-  const status = normalizeJobStatus(job.status);
-  if (["completed", "cancelled", "failed"].includes(status)) {
-    return { success: false, message: "Deze taak is al afgerond." };
+  const result = await queueCancel(supabase, context.organization.id, jobId);
+  if (!result.success || !result.job) {
+    return { success: false, message: result.message, jobId };
   }
 
-  const now = new Date().toISOString();
-  const runtimeMs = computeRuntimeMs(job.started_at, now);
-
-  const { error: updateError } = await supabase
-    .from("scrape_jobs")
-    .update({
-      status: "cancelled",
-      completed_at: now,
-      runtime_ms: runtimeMs,
-      last_heartbeat_at: now,
-      error_message: "Cancelled by user",
-    })
-    .eq("id", jobId)
-    .eq("organization_id", orgId);
-
-  if (updateError) return { success: false, message: updateError.message };
-
-  await appendJobLog(supabase, {
-    organizationId: orgId,
-    jobId,
-    eventCode: "job_cancelled",
-    message: "Cancelled",
-    level: "warn",
-    sourceCode: job.current_source_code,
-  });
-
-  revalidateJobPaths(jobId, job.search_query_id);
+  revalidateJobPaths(jobId, result.job.search_query_id);
   return {
     success: true,
-    message: "Scrape geannuleerd.",
+    message: result.message,
     jobId,
     status: "cancelled",
     done: true,
@@ -321,37 +208,68 @@ export async function retryScrapeAction(jobId: string): Promise<JobActionResult>
   }
 
   const supabase = await createClient();
+  const result = await queueRetry(supabase, context.organization.id, jobId);
+  if (!result.success || !result.job) {
+    return { success: false, message: result.message, jobId };
+  }
+
+  revalidateJobPaths(result.job.id, result.job.search_query_id);
+  return {
+    success: true,
+    message: result.message,
+    jobId: result.job.id,
+    status: result.job.status,
+    done: false,
+  };
+}
+
+export async function deleteScrapeAction(jobId: string): Promise<JobActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) {
+    return { success: false, message: "Geen actieve organisatie." };
+  }
+
+  const supabase = await createClient();
   const orgId = context.organization.id;
 
-  const { data: job, error } = await supabase
+  const { data: job, error: loadError } = await supabase
     .from("scrape_jobs")
-    .select("*")
+    .select("id, search_query_id, status")
     .eq("organization_id", orgId)
     .eq("id", jobId)
     .maybeSingle();
 
-  if (error) return { success: false, message: error.message };
+  if (loadError) return { success: false, message: loadError.message };
   if (!job) return { success: false, message: "Taak niet gevonden." };
 
-  const status = normalizeJobStatus(job.status);
-  if (!["failed", "cancelled", "paused", "completed"].includes(status)) {
+  const { error } = await supabase
+    .from("scrape_jobs")
+    .delete()
+    .eq("organization_id", orgId)
+    .eq("id", jobId);
+
+  if (error) {
     return {
       success: false,
-      message: "Retry is beschikbaar voor Failed, Cancelled, Paused of Completed.",
+      message:
+        error.message.includes("policy") || error.code === "42501"
+          ? "Verwijderen vereist owner/admin (en migratie 000007)."
+          : error.message,
     };
   }
 
-  if (!job.search_query_id) {
-    return { success: false, message: "Geen gekoppelde zoekopdracht voor retry." };
+  revalidatePath("/jobs");
+  revalidatePath("/dashboard");
+  if (job.search_query_id) {
+    revalidatePath(`/zoekopdrachten/${job.search_query_id}`);
   }
 
-  // New job keeps history intact (foundation for distributed retries).
-  return startScrapeAction(job.search_query_id);
+  return { success: true, message: "Job verwijderd.", jobId, done: true };
 }
 
 /**
- * Advances the mock scrape engine by one step/page.
- * Client polls while status is queued/active (and legacy running).
+ * Advances the mock queue/worker by one step.
+ * Client polls while job is pending/queued/active.
  */
 export async function advanceMockScrapeAction(
   jobId: string,
@@ -374,33 +292,30 @@ export async function advanceMockScrapeAction(
   if (jobError) return { success: false, message: jobError.message };
   if (!job) return { success: false, message: "Taak niet gevonden." };
 
-  const status = normalizeJobStatus(job.status);
+  const status = job.status;
 
-  if (["completed", "failed", "cancelled", "paused"].includes(status)) {
+  if (
+    status === "completed" ||
+    status === "partially_completed" ||
+    status === "failed" ||
+    status === "cancelled" ||
+    status === "paused"
+  ) {
     return {
       success: true,
       message: "Taak is niet actief.",
       jobId,
-      status: job.status,
+      status,
       done: true,
     };
   }
 
-  if (status === "pending") {
-    await supabase
-      .from("scrape_jobs")
-      .update({ status: "queued", last_heartbeat_at: new Date().toISOString() })
-      .eq("id", jobId);
-    await appendJobLog(supabase, {
-      organizationId: orgId,
-      jobId,
-      eventCode: "queue_started",
-      message: "Queue started",
-    });
+  if (status === "draft" || status === "pending") {
+    const queued = await enqueue(supabase, orgId, jobId);
     revalidateJobPaths(jobId, job.search_query_id);
     return {
-      success: true,
-      message: "Queued",
+      success: queued.success,
+      message: queued.message,
       jobId,
       status: "queued",
       done: false,
@@ -408,72 +323,74 @@ export async function advanceMockScrapeAction(
   }
 
   if (status === "queued") {
+    // Prefer claiming this specific job (single-job mock runner).
     const now = new Date().toISOString();
-    const sourceCode = job.current_source_code ?? DEFAULT_CONNECTOR_CODE;
-    await supabase
+    const { data: activated, error } = await supabase
       .from("scrape_jobs")
       .update({
         status: "active",
         started_at: job.started_at ?? now,
         claimed_at: now,
-        claimed_by: MOCK_ENGINE_CLAIM,
-        current_source_code: sourceCode,
+        claimed_by: "mock-worker-v1",
         last_heartbeat_at: now,
-        error_message: null,
+        progress_percent: Math.max(job.progress_percent, 0),
       })
       .eq("id", jobId)
-      .eq("organization_id", orgId);
+      .eq("organization_id", orgId)
+      .eq("status", "queued")
+      .select("*")
+      .maybeSingle();
+
+    if (error) return { success: false, message: error.message };
+    if (!activated) {
+      // Race: another worker claimed — try org dequeue
+      const claimed = await dequeue(supabase, orgId);
+      revalidateJobPaths(jobId, job.search_query_id);
+      return {
+        success: claimed.success,
+        message: claimed.message,
+        jobId: claimed.job?.id ?? jobId,
+        status: claimed.job?.status ?? "queued",
+        done: false,
+      };
+    }
 
     await appendJobLog(supabase, {
       organizationId: orgId,
       jobId,
-      eventCode: "connector_loaded",
-      message: `Connector loaded: ${sourceCode}`,
-      sourceCode,
+      eventCode: "worker_assigned",
+      message: "Worker Assigned (mock-worker-v1)",
+      sourceCode: job.current_source_code,
     });
     await appendJobLog(supabase, {
       organizationId: orgId,
       jobId,
-      eventCode: "searching",
-      message: "Searching...",
-      sourceCode,
+      eventCode: "started",
+      message: "Started",
+      sourceCode: job.current_source_code,
     });
 
     revalidateJobPaths(jobId, job.search_query_id);
     return {
       success: true,
-      message: "Scrape active",
+      message: "Active",
       jobId,
       status: "active",
       done: false,
     };
   }
 
-  // active / running
+  // active / running — MockWorker tick
   if (!job.search_query_id) {
-    const now = new Date().toISOString();
-    await supabase
-      .from("scrape_jobs")
-      .update({
-        status: "failed",
-        error_message: "Geen gekoppelde zoekopdracht.",
-        completed_at: now,
-        runtime_ms: computeRuntimeMs(job.started_at, now),
-        error_count: (job.error_count ?? 0) + 1,
-      })
-      .eq("id", jobId);
-
-    await appendJobLog(supabase, {
-      organizationId: orgId,
+    const failed = await queueFail(
+      supabase,
+      orgId,
       jobId,
-      eventCode: "failed",
-      message: "Failed — missing search query",
-      level: "error",
-    });
-
+      "Geen gekoppelde zoekopdracht.",
+    );
     return {
       success: false,
-      message: "Geen gekoppelde zoekopdracht.",
+      message: failed.message,
       jobId,
       status: "failed",
       done: true,
@@ -488,26 +405,12 @@ export async function advanceMockScrapeAction(
     .maybeSingle();
 
   if (searchError || !searchQuery) {
-    const now = new Date().toISOString();
-    await supabase
-      .from("scrape_jobs")
-      .update({
-        status: "failed",
-        error_message: searchError?.message ?? "Zoekopdracht ontbreekt.",
-        completed_at: now,
-        runtime_ms: computeRuntimeMs(job.started_at, now),
-        error_count: (job.error_count ?? 0) + 1,
-      })
-      .eq("id", jobId);
-
-    await appendJobLog(supabase, {
-      organizationId: orgId,
+    await queueFail(
+      supabase,
+      orgId,
       jobId,
-      eventCode: "failed",
-      message: "Failed",
-      level: "error",
-    });
-
+      searchError?.message ?? "Zoekopdracht ontbreekt.",
+    );
     return {
       success: false,
       message: searchError?.message ?? "Zoekopdracht ontbreekt.",
@@ -517,49 +420,26 @@ export async function advanceMockScrapeAction(
     };
   }
 
-  const connector = resolveJobConnector(
-    job.current_source_code
-      ? [job.current_source_code, ...(searchQuery.sources ?? [])]
-      : searchQuery.sources,
-  );
-  const pageIndex = job.pages_processed;
-  const targetPages = job.target_pages || MOCK_SCRAPE_TARGET_PAGES;
-
-  const page = await connector.searchPage({
+  const worker = resolveWorkerForJob(job);
+  const stepIndex = job.pages_processed;
+  const tick = await worker.processTick({
     organizationId: orgId,
-    jobId,
-    pageIndex,
-    pageSize: MOCK_COMPANIES_PER_PAGE,
-    search: {
-      keyword: searchQuery.keyword,
-      keywords: searchQuery.keywords,
-      industry: searchQuery.industry ?? undefined,
-      industries: searchQuery.industries,
-      city: searchQuery.city ?? undefined,
-      cities: searchQuery.cities,
-      region: searchQuery.region ?? undefined,
-      regions: searchQuery.regions,
-      country: searchQuery.country ?? undefined,
-      countries: searchQuery.countries,
-      languages: searchQuery.languages,
-      sources: searchQuery.sources,
-      searchPrompt: searchQuery.search_prompt,
-      maxResults: targetPages * MOCK_COMPANIES_PER_PAGE,
-    },
+    job,
+    searchQuery,
+    stepIndex,
   });
 
   await appendJobLog(supabase, {
     organizationId: orgId,
     jobId,
-    eventCode: "searching",
-    message: `Searching... page ${pageIndex + 1}/${targetPages}`,
-    sourceCode: page.sourceCode,
-    metadata: { pageIndex, items: page.items.length },
+    eventCode: "progress",
+    message: tick.message,
+    sourceCode: tick.workerCode,
+    metadata: { progressPercent: tick.progressPercent, stepIndex },
   });
 
-  let insertedCount = 0;
-
-  for (const item of page.items) {
+  let inserted = 0;
+  for (const item of tick.companies) {
     const { data: company, error: companyError } = await supabase
       .from("companies")
       .insert({
@@ -568,7 +448,7 @@ export async function advanceMockScrapeAction(
         normalized_company_name: normalizeName(item.companyName),
         website_url: item.websiteUrl ?? null,
         normalized_domain: domainFromUrl(item.websiteUrl),
-        description: `Mock connector result (${page.sourceCode})`,
+        description: `Mock worker result (${tick.workerCode})`,
         industry: item.industry ?? null,
         city: item.city ?? null,
         region: item.region ?? null,
@@ -577,7 +457,7 @@ export async function advanceMockScrapeAction(
         source_type: item.sourceType,
         last_checked_at: new Date().toISOString(),
         status: "new",
-        notes: "Generated by modular mock scrape engine.",
+        notes: "Generated by MockWorker (fase 5 queue engine).",
         linkedin_url: searchQuery.linkedin_required
           ? `https://www.linkedin.com/company/${normalizeName(item.companyName).replace(/\s+/g, "-")}`
           : null,
@@ -586,11 +466,6 @@ export async function advanceMockScrapeAction(
       .single();
 
     if (companyError || !company) {
-      await supabase
-        .from("scrape_jobs")
-        .update({ error_count: (job.error_count ?? 0) + 1 })
-        .eq("id", jobId);
-
       return {
         success: false,
         message: companyError?.message ?? "Kon bedrijf niet opslaan.",
@@ -605,13 +480,17 @@ export async function advanceMockScrapeAction(
       scrape_job_id: jobId,
       source_url: item.sourceUrl,
       source_type: item.sourceType,
-      metadata_json: { mock: true, connector: page.sourceCode, page: pageIndex + 1 },
+      metadata_json: {
+        mock: true,
+        worker: tick.workerCode,
+        step: stepIndex + 1,
+      },
     });
 
     await supabase.from("scrape_results").insert({
       organization_id: orgId,
       scrape_job_id: jobId,
-      source_code: page.sourceCode,
+      source_code: tick.workerCode,
       company_name: item.companyName,
       website_url: item.websiteUrl ?? null,
       city: item.city ?? null,
@@ -622,46 +501,63 @@ export async function advanceMockScrapeAction(
       status: "normalized",
       raw_payload: {
         mock: true,
-        sourceUrl: item.sourceUrl,
-        pageIndex,
+        progressPercent: tick.progressPercent,
+        stepIndex,
       },
     });
 
-    insertedCount += 1;
+    inserted += 1;
   }
 
   const nextPages = job.pages_processed + 1;
-  const nextCompanies = job.companies_found + insertedCount;
-  const progress = jobProgressPercent(nextPages, targetPages);
-  const finished = nextPages >= targetPages;
+  const nextCompanies = job.companies_found + inserted;
+  const nextContacts = job.contacts_found + tick.contactsFound;
+  const pagesTotal = job.pages_total || job.target_pages || 5;
   const now = new Date().toISOString();
 
-  const updatePayload: {
-    pages_processed: number;
-    companies_found: number;
-    progress_percent: number;
-    current_source_code: string;
-    last_heartbeat_at: string;
-    status?: ScrapeJobStatus;
-    completed_at?: string;
-    runtime_ms?: number | null;
-  } = {
-    pages_processed: nextPages,
-    companies_found: nextCompanies,
-    progress_percent: finished ? 100 : progress,
-    current_source_code: page.sourceCode,
-    last_heartbeat_at: now,
-  };
+  if (tick.done) {
+    await supabase
+      .from("scrape_jobs")
+      .update({
+        pages_processed: nextPages,
+        pages_total: pagesTotal,
+        target_pages: pagesTotal,
+        companies_found: nextCompanies,
+        contacts_found: nextContacts,
+        progress_percent: 100,
+        current_source_code: tick.workerCode,
+        last_heartbeat_at: now,
+      })
+      .eq("id", jobId)
+      .eq("organization_id", orgId);
 
-  if (finished) {
-    updatePayload.status = "completed";
-    updatePayload.completed_at = now;
-    updatePayload.runtime_ms = computeRuntimeMs(job.started_at, now);
+    await queueComplete(supabase, orgId, jobId, {
+      companiesFound: nextCompanies,
+      contactsFound: nextContacts,
+    });
+
+    revalidateJobPaths(jobId, job.search_query_id);
+    return {
+      success: true,
+      message: `Completed — ${nextCompanies} mock companies`,
+      jobId,
+      status: "completed",
+      done: true,
+    };
   }
 
   const { error: progressError } = await supabase
     .from("scrape_jobs")
-    .update(updatePayload)
+    .update({
+      pages_processed: nextPages,
+      pages_total: pagesTotal,
+      target_pages: pagesTotal,
+      companies_found: nextCompanies,
+      contacts_found: nextContacts,
+      progress_percent: tick.progressPercent,
+      current_source_code: tick.workerCode,
+      last_heartbeat_at: now,
+    })
     .eq("id", jobId)
     .eq("organization_id", orgId);
 
@@ -669,26 +565,12 @@ export async function advanceMockScrapeAction(
     return { success: false, message: progressError.message, jobId };
   }
 
-  if (finished) {
-    await appendJobLog(supabase, {
-      organizationId: orgId,
-      jobId,
-      eventCode: "finished",
-      message: `Finished — ${nextCompanies} companies`,
-      sourceCode: page.sourceCode,
-      metadata: { companies: nextCompanies, pages: nextPages },
-    });
-  }
-
   revalidateJobPaths(jobId, job.search_query_id);
-
   return {
     success: true,
-    message: finished
-      ? `Scrape voltooid — ${nextCompanies} mock-bedrijven.`
-      : `Pagina ${nextPages}/${targetPages} verwerkt.`,
+    message: tick.message,
     jobId,
-    status: finished ? "completed" : "active",
-    done: finished,
+    status: "active",
+    done: false,
   };
 }

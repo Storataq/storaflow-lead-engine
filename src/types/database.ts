@@ -17,6 +17,7 @@ export type SearchCriteriaStatus = "draft" | "active" | "paused";
 export type CompanySizeOption = "1-10" | "11-50" | "51-250" | "250+";
 
 export type ScrapeJobStatus =
+  | "draft"
   | "pending"
   | "queued"
   | "active"
@@ -26,6 +27,8 @@ export type ScrapeJobStatus =
   | "partially_completed"
   | "failed"
   | "cancelled";
+
+export type ScrapeJobPriority = "LOW" | "NORMAL" | "HIGH" | "CRITICAL";
 
 export type ScrapeJobLogLevel = "debug" | "info" | "warn" | "error";
 

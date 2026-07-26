@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import {
   advanceMockScrapeAction,
   cancelScrapeAction,
+  deleteScrapeAction,
   pauseScrapeAction,
   resumeScrapeAction,
   retryScrapeAction,
+  startExistingJobAction,
 } from "@/lib/jobs/actions";
 import { normalizeJobStatus } from "@/lib/jobs/constants";
 import type { ScrapeJobStatus } from "@/types/database";
@@ -18,22 +20,20 @@ import type { ScrapeJobStatus } from "@/types/database";
 type JobRunnerControlsProps = {
   jobId: string;
   status: ScrapeJobStatus;
-  /** When true, also show Start is handled elsewhere — this is lifecycle controls */
-  showAdvanceHint?: boolean;
 };
 
-export function JobRunnerControls({
-  jobId,
-  status,
-}: JobRunnerControlsProps) {
+export function JobRunnerControls({ jobId, status }: JobRunnerControlsProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const advancingRef = useRef(false);
   const normalized = normalizeJobStatus(status);
-  const isOpen = normalized === "pending" || normalized === "queued" || normalized === "active";
+  const isProcessing =
+    normalized === "queued" ||
+    normalized === "active" ||
+    normalized === "pending";
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isProcessing) return;
 
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -54,7 +54,7 @@ export function JobRunnerControls({
         if (!result.done && !cancelled) {
           timer = setTimeout(() => {
             void tick();
-          }, 700);
+          }, 650);
         } else if (result.done && result.status === "completed") {
           toast.success(result.message);
         }
@@ -65,16 +65,19 @@ export function JobRunnerControls({
 
     timer = setTimeout(() => {
       void tick();
-    }, 400);
+    }, 350);
 
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [jobId, isOpen, router]);
+  }, [jobId, isProcessing, router]);
 
   async function run(
-    action: (id: string) => Promise<{ success: boolean; message: string; jobId?: string }>,
+    action: (
+      id: string,
+    ) => Promise<{ success: boolean; message: string; jobId?: string }>,
+    options?: { afterDelete?: boolean },
   ) {
     const result = await action(jobId);
     if (!result.success) {
@@ -82,6 +85,13 @@ export function JobRunnerControls({
       return;
     }
     toast.success(result.message);
+    if (options?.afterDelete) {
+      startTransition(() => {
+        router.push("/jobs");
+        router.refresh();
+      });
+      return;
+    }
     if (result.jobId && result.jobId !== jobId) {
       startTransition(() => {
         router.push(`/jobs/${result.jobId}`);
@@ -96,10 +106,23 @@ export function JobRunnerControls({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {isOpen ? (
+      {isProcessing ? (
         <p className="mr-2 text-sm text-muted-foreground">
-          Mock-engine verwerkt…
+          Queue / MockWorker actief…
         </p>
+      ) : null}
+
+      {normalized === "draft" || normalized === "pending" ? (
+        <Button
+          type="button"
+          size="sm"
+          disabled={pending}
+          onClick={() => {
+            void run(startExistingJobAction);
+          }}
+        >
+          Start
+        </Button>
       ) : null}
 
       {normalized === "pending" ||
@@ -131,6 +154,19 @@ export function JobRunnerControls({
         </Button>
       ) : null}
 
+      {["failed", "cancelled", "paused", "completed"].includes(normalized) ? (
+        <Button
+          type="button"
+          size="sm"
+          disabled={pending}
+          onClick={() => {
+            void run(retryScrapeAction);
+          }}
+        >
+          Retry
+        </Button>
+      ) : null}
+
       {!["completed", "cancelled", "failed"].includes(normalized) ? (
         <Button
           type="button"
@@ -145,18 +181,18 @@ export function JobRunnerControls({
         </Button>
       ) : null}
 
-      {["failed", "cancelled", "paused", "completed"].includes(normalized) ? (
-        <Button
-          type="button"
-          size="sm"
-          disabled={pending}
-          onClick={() => {
-            void run(retryScrapeAction);
-          }}
-        >
-          Retry
-        </Button>
-      ) : null}
+      <Button
+        type="button"
+        variant="destructive"
+        size="sm"
+        disabled={pending}
+        onClick={() => {
+          if (!window.confirm("Job definitief verwijderen?")) return;
+          void run(deleteScrapeAction, { afterDelete: true });
+        }}
+      >
+        Delete
+      </Button>
     </div>
   );
 }

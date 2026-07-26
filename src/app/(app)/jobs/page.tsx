@@ -52,7 +52,7 @@ export default function JobsPage() {
     <div>
       <PageHeader
         title="Scrape Jobs"
-        description="Queue: Waiting, Running, Paused, Completed, Failed — mock connector foundation."
+        description="Job queue: Pending, Queued, Running, Paused, Completed, Failed, Cancelled — MockWorker only."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Scrape Jobs" },

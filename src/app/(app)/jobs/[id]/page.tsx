@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatRuntimeMs } from "@/lib/jobs/constants";
+import { formatRuntimeMs, jobPriorityLabel } from "@/lib/jobs/constants";
 import {
   getScrapeJob,
   listCompaniesForJob,
@@ -75,7 +75,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     <div>
       <PageHeader
         title={searchName}
-        description="Modulaire scrape job — mock connector, logs en resultaten."
+        description="Queue engine + MockWorker — lokale progress-simulatie."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Scrape Jobs", href: "/jobs" },
@@ -109,9 +109,14 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
         <div className="flex flex-wrap items-center gap-3">
           <JobStatusBadge status={job.status} />
           <span className="text-sm text-muted-foreground">
+            Prioriteit: {jobPriorityLabel(job.priority)}
+          </span>
+          <span className="text-sm text-muted-foreground">
             Bron: {job.current_source_code ?? "—"}
           </span>
-          <span className="text-sm text-muted-foreground">{job.job_type}</span>
+          <span className="text-sm text-muted-foreground">
+            Retries: {job.retry_count}
+          </span>
         </div>
         <JobRunnerControls jobId={job.id} status={job.status} />
       </div>
@@ -120,14 +125,14 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Voortgang</CardTitle>
           <CardDescription>
-            Progress {job.progress_percent}% · pagina {job.pages_processed}/
-            {job.target_pages}
+            Progress {job.progress_percent}% · stap {job.pages_processed}/
+            {job.pages_total || job.target_pages}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <JobProgressBar
             pagesProcessed={job.pages_processed}
-            targetPages={job.target_pages}
+            targetPages={job.pages_total || job.target_pages}
             progressPercent={job.progress_percent}
             status={job.status}
           />
@@ -201,9 +206,10 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
         <Card className="shadow-none">
           <CardHeader>
-            <CardTitle className="text-base">Logregels</CardTitle>
+            <CardTitle className="text-base">Timeline / Logs</CardTitle>
             <CardDescription>
-              Iedere stap van de mock-engine (Job created → Finished).
+              Job Created → Queued → Worker Assigned → Started → Progress →
+              Completed.
             </CardDescription>
           </CardHeader>
           <CardContent>

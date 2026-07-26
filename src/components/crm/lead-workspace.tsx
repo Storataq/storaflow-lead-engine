@@ -24,6 +24,10 @@ import {
 import { toast } from "sonner";
 
 import { RichNoteEditor } from "@/components/crm/rich-note-editor";
+import {
+  CompanyIntelligenceDashboard,
+  CompanyIntelligenceSidebar,
+} from "@/components/crm/company-intelligence-dashboard";
 import { EmptyState } from "@/components/layout/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -104,6 +108,7 @@ type LeadWorkspaceProps = {
 
 const TABS = [
   { id: "overview", label: "Overview" },
+  { id: "intelligence", label: "Intelligence" },
   { id: "timeline", label: "Timeline" },
   { id: "notes", label: "Notes" },
   { id: "tasks", label: "Tasks" },
@@ -347,14 +352,28 @@ export function LeadWorkspace({
 
   const companyFields: { label: string; value: string }[] = [
     { label: "Bedrijfsnaam", value: displayValue(lead.company_name) },
-    { label: "Website", value: displayValue(lead.website) },
-    { label: "Telefoon", value: displayValue(lead.phone) },
+    {
+      label: "Website",
+      value: displayValue(lead.website || enrichment.website),
+    },
+    {
+      label: "Telefoon",
+      value: displayValue(lead.phone || enrichment.phone),
+    },
     { label: "E-mail", value: displayValue(lead.email) },
     { label: "LinkedIn", value: displayValue(enrichment.linkedinUrl) },
-    { label: "Land", value: displayValue(lead.country) },
-    { label: "Stad", value: displayValue(lead.city) },
+    { label: "Facebook", value: displayValue(enrichment.facebookUrl) },
+    { label: "Instagram", value: displayValue(enrichment.instagramUrl) },
+    { label: "X/Twitter", value: displayValue(enrichment.twitterUrl) },
+    { label: "Land", value: displayValue(lead.country || enrichment.country) },
+    { label: "Regio", value: displayValue(enrichment.region) },
+    { label: "Stad", value: displayValue(lead.city || enrichment.city) },
     { label: "Adres", value: displayValue(enrichment.address) },
-    { label: "Branche", value: displayValue(lead.industry) },
+    { label: "Postcode", value: displayValue(enrichment.postalCode) },
+    {
+      label: "Branche",
+      value: displayValue(lead.industry || enrichment.industry),
+    },
     {
       label: "Bedrijfsgrootte",
       value: displayValue(enrichment.companySize),
@@ -477,38 +496,48 @@ export function LeadWorkspace({
               {companyFields.map((field) => (
                 <div key={field.label} className="space-y-0.5">
                   <p className="text-xs text-muted-foreground">{field.label}</p>
-                  {field.label === "Website" && lead.website ? (
-                    <a
-                      href={
-                        lead.website.startsWith("http")
-                          ? lead.website
-                          : `https://${lead.website}`
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                      className="break-all font-medium underline-offset-4 hover:underline"
-                    >
-                      {lead.website}
-                    </a>
-                  ) : field.label === "LinkedIn" && enrichment.linkedinUrl ? (
-                    <a
-                      href={enrichment.linkedinUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="break-all font-medium underline-offset-4 hover:underline"
-                    >
-                      {enrichment.linkedinUrl}
-                    </a>
-                  ) : field.label === "E-mail" && lead.email ? (
-                    <a
-                      href={`mailto:${lead.email}`}
-                      className="break-all font-medium underline-offset-4 hover:underline"
-                    >
-                      {lead.email}
-                    </a>
-                  ) : (
-                    <p className="break-words font-medium">{field.value}</p>
-                  )}
+                  {(() => {
+                    const site = lead.website || enrichment.website;
+                    if (field.label === "Website" && site) {
+                      return (
+                        <a
+                          href={
+                            site.startsWith("http") ? site : `https://${site}`
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="break-all font-medium underline-offset-4 hover:underline"
+                        >
+                          {site}
+                        </a>
+                      );
+                    }
+                    if (field.label === "LinkedIn" && enrichment.linkedinUrl) {
+                      return (
+                        <a
+                          href={enrichment.linkedinUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="break-all font-medium underline-offset-4 hover:underline"
+                        >
+                          {enrichment.linkedinUrl}
+                        </a>
+                      );
+                    }
+                    if (field.label === "E-mail" && lead.email) {
+                      return (
+                        <a
+                          href={`mailto:${lead.email}`}
+                          className="break-all font-medium underline-offset-4 hover:underline"
+                        >
+                          {lead.email}
+                        </a>
+                      );
+                    }
+                    return (
+                      <p className="break-words font-medium">{field.value}</p>
+                    );
+                  })()}
                 </div>
               ))}
               {lead.company_id ? (
@@ -642,6 +671,18 @@ export function LeadWorkspace({
                 </Card>
               </div>
             </div>
+          ) : null}
+
+          {tab === "intelligence" ? (
+            <CompanyIntelligenceDashboard
+              lead={lead}
+              enrichment={enrichment}
+              contacts={contacts}
+              tasks={tasks}
+              deals={deals}
+              notes={notes}
+              activities={activities}
+            />
           ) : null}
 
           {tab === "timeline" ? (
@@ -1045,6 +1086,14 @@ export function LeadWorkspace({
 
         {/* Right rail */}
         <aside className="space-y-4">
+          <CompanyIntelligenceSidebar
+            lead={lead}
+            enrichment={enrichment}
+            contacts={contacts}
+            tasks={tasks}
+            deals={deals}
+          />
+
           <Card className="shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Lead Score</CardTitle>

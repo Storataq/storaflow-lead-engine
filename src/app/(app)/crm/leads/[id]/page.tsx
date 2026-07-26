@@ -69,7 +69,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     <div>
       <PageHeader
         title={lead.company_name}
-        description="Lead workspace met company intelligence, timeline, notes, tasks en deals."
+        description="Lead workspace met Company Intelligence, timeline, notes, tasks en deals."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "CRM", href: "/crm" },

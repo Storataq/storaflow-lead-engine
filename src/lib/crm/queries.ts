@@ -17,8 +17,20 @@ export type CrmLeadWithRelations = CrmLeadRow & {
 };
 
 export type LeadCompanyEnrichment = {
-  linkedinUrl: string | null;
+  companyName: string | null;
+  website: string | null;
+  phone: string | null;
+  industry: string | null;
+  category: string | null;
+  country: string | null;
+  region: string | null;
+  city: string | null;
+  postalCode: string | null;
   address: string | null;
+  linkedinUrl: string | null;
+  facebookUrl: string | null;
+  instagramUrl: string | null;
+  twitterUrl: string | null;
   companySize: string | null;
   description: string | null;
 };
@@ -524,8 +536,20 @@ export async function getLeadCompanyEnrichment(
   companyId: string | null,
 ): Promise<LeadCompanyEnrichment> {
   const empty: LeadCompanyEnrichment = {
-    linkedinUrl: null,
+    companyName: null,
+    website: null,
+    phone: null,
+    industry: null,
+    category: null,
+    country: null,
+    region: null,
+    city: null,
+    postalCode: null,
     address: null,
+    linkedinUrl: null,
+    facebookUrl: null,
+    instagramUrl: null,
+    twitterUrl: null,
     companySize: null,
     description: null,
   };
@@ -534,20 +558,37 @@ export async function getLeadCompanyEnrichment(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("companies")
-    .select("linkedin_url, description, city, region, postal_code, country")
+    .select(
+      "company_name, website_url, phone, industry, city, region, postal_code, country, description, linkedin_url, facebook_url, instagram_url, source_type",
+    )
     .eq("organization_id", organizationId)
     .eq("id", companyId)
     .maybeSingle();
 
   if (error || !data) return empty;
 
-  const address = [data.postal_code, data.city, data.region, data.country]
-    .filter(Boolean)
-    .join(", ");
+  const addressParts = [
+    data.postal_code,
+    data.city,
+    data.region,
+    data.country,
+  ].filter(Boolean);
 
   return {
+    companyName: data.company_name,
+    website: data.website_url,
+    phone: data.phone,
+    industry: data.industry,
+    category: data.source_type ?? data.industry,
+    country: data.country,
+    region: data.region,
+    city: data.city,
+    postalCode: data.postal_code,
+    address: addressParts.join(", ") || null,
     linkedinUrl: data.linkedin_url,
-    address: address || null,
+    facebookUrl: data.facebook_url,
+    instagramUrl: data.instagram_url,
+    twitterUrl: null,
     companySize: null,
     description: data.description,
   };

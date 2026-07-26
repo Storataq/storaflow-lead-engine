@@ -8,6 +8,7 @@ import "@/lib/scraping/connectors/bootstrap";
 
 import { ConnectorError } from "@/lib/scraping/connectors/errors";
 import type { ConnectorLogEntry } from "@/lib/scraping/connectors/logger";
+import { runGoogleMapsMockTest } from "@/lib/scraping/connectors/google-maps";
 import { runMockPipelineTest } from "@/lib/scraping/connectors/mock-test-service";
 import type { NormalizedBusinessResult } from "@/lib/scraping/connectors/types";
 import { ConnectorLogBuffer } from "@/lib/scraping/core/logging";
@@ -73,6 +74,22 @@ function mapLegacyToNormalized(
 export async function runConnectorMockTestAction(
   connectorCode: string,
 ): Promise<ConnectorMockTestResult> {
+  if (connectorCode === "google_maps") {
+    const maps = await runGoogleMapsMockTest();
+    return {
+      success: maps.success,
+      message: maps.message,
+      connectorCode: maps.connectorCode,
+      runtimeMs: maps.runtimeMs,
+      fetchedCount: maps.fetchedCount,
+      validCount: maps.validCount,
+      invalidCount: maps.invalidCount,
+      duplicatesRemoved: 0,
+      results: maps.results,
+      logs: maps.logs,
+    };
+  }
+
   const foundation = await runMockPipelineTest(connectorCode);
   if (foundation.success && foundation.summary) {
     const summary = foundation.summary;

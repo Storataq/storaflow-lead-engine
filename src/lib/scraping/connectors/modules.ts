@@ -35,15 +35,27 @@ export const GoogleMapsConnector = defineMock({
   name: "Google Maps",
   provider: "google",
   category: "maps",
-  description: "Places / Maps discovery (mock). Live adapter later.",
+  description:
+    "Google Maps / Places discovery foundation (mock). Live Places API, Playwright or Puppeteer adapters later — no network in this phase.",
   mode: "mock",
   health: "ready",
   capabilities: defaultCapabilities({
     supportsGeo: true,
     supportsReviews: true,
-    requiresApiKey: true,
+    supportsPhoneNumbers: true,
+    supportsWebsites: true,
+    requiresApiKey: false,
+    supportedLanguages: ["en", "nl", "de", "fr", "es", "it", "pt"],
+    maxRequestsPerMinute: 20,
+    defaultRateLimitPerMinute: 20,
   }),
-  defaultConfig: defaultConfig({ rateLimitPerMinute: 20, proxyEnabled: true }),
+  defaultConfig: defaultConfig({
+    rateLimitPerMinute: 20,
+    retryCount: 3,
+    timeoutMs: 30_000,
+    proxyEnabled: false,
+    priority: 90,
+  }),
 });
 
 export const GoogleSearchConnector = defineMock({

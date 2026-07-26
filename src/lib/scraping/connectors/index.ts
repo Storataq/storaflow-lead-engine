@@ -58,6 +58,14 @@ export {
   createMockConnector,
 } from "@/lib/scraping/connectors/mock";
 export {
+  GoogleMapsConnector,
+  createGoogleMapsConnector,
+  GOOGLE_MAPS_CONNECTOR_CODE,
+  runGoogleMapsMockTest,
+  GOOGLE_MAPS_CAPABILITY_PROFILE,
+  type GoogleMapsConnectorConfig,
+} from "@/lib/scraping/connectors/google-maps";
+export {
   runConnectorPipeline,
   runConnectorPipelineDetailed,
 } from "@/lib/scraping/connectors/pipeline";

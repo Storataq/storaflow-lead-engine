@@ -58,7 +58,11 @@ export function ConnectorDetailClient({ manifest }: ConnectorDetailClientProps) 
         <Badge variant="outline">{manifest.mode === "mock" ? "Mock" : "Live"}</Badge>
         <Badge variant="outline">{manifest.category}</Badge>
         <Button size="sm" disabled={pending} onClick={handleMockTest}>
-          {pending ? "Bezig…" : "Run Mock Test"}
+          {pending
+            ? "Bezig…"
+            : manifest.code === "google_maps"
+              ? "Run Google Maps Mock Test"
+              : "Run Mock Test"}
         </Button>
       </div>
 
@@ -137,8 +141,9 @@ export function ConnectorDetailClient({ manifest }: ConnectorDetailClientProps) 
           <CardHeader>
             <CardTitle className="text-base">Laatste mock-run</CardTitle>
             <CardDescription>
-              Search → Factory → Connector → Parser → Normalizer → Validator →
-              Deduplicator → AI placeholder
+              {manifest.code === "google_maps"
+                ? "Google Maps mock: Connector loaded → Mock request → Parsing → Normalization → Validation → Completed."
+                : "Search → Factory → Connector → Parser → Normalizer → Validator → Deduplicator → AI placeholder"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

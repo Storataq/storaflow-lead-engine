@@ -11,6 +11,7 @@ import type {
   ConnectorSearchResponse,
   ConnectorStatus,
   HealthStatus,
+  NormalizedBusinessResult,
 } from "@/lib/scraping/connectors/types";
 
 export interface Connector {
@@ -25,4 +26,8 @@ export interface Connector {
   validate(input: ConnectorSearchInput): Promise<boolean>;
   normalize(hits: ConnectorSearchHit[]): Promise<ConnectorSearchResponse>;
   healthCheck(): Promise<HealthStatus>;
+  /** Optional — place/detail enrichment (e.g. Google Maps). */
+  fetchDetails?(id: string): Promise<NormalizedBusinessResult | null>;
+  /** Optional — release long-lived resources (browser pools, clients). */
+  shutdown?(): Promise<void>;
 }

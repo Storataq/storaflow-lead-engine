@@ -22,7 +22,9 @@ export default function ExclusionsPage() {
       <EmptyState
         icon={Ban}
         title="Uitsluitlijst is leeg"
-        description="Uitsluitingen worden gecontroleerd vóór crawlen, opslaan en exporteren. Beheer volgt in een latere fase."
+        description="Voeg later uitsluitingen toe om domeinen of contacten te blokkeren vóór crawlen, opslaan en exporteren."
+        actionLabel="Naar instellingen"
+        actionHref="/settings"
       />
     </div>
   );

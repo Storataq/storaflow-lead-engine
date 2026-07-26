@@ -22,7 +22,9 @@ export default function ExportsPage() {
       <EmptyState
         icon={Download}
         title="Nog geen exports"
-        description="Exportmetadata (filters, rij-aantal, aanmaker) wordt bewaard zodra exports beschikbaar zijn."
+        description="Bouw eerst een leadlijst via zoekopdrachten en mock scrapes. Export volgt in een latere fase."
+        actionLabel="Naar zoekopdrachten"
+        actionHref="/zoekopdrachten"
       />
     </div>
   );

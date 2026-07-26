@@ -199,6 +199,7 @@ function SearchQuerySheetForm({
 
   return (
     <form action={formAction} className="flex min-h-0 flex-1 flex-col">
+      <fieldset disabled={pending} className="flex min-h-0 flex-1 flex-col border-0 p-0">
       {isEdit ? <input type="hidden" name="id" value={initial?.id} /> : null}
 
       <div className="border-b border-border px-4 py-2">
@@ -229,6 +230,7 @@ function SearchQuerySheetForm({
                   id="name"
                   name="name"
                   required
+                  autoFocus
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   placeholder="bijv. Bloemenwinkels Amsterdam"
@@ -432,6 +434,7 @@ function SearchQuerySheetForm({
           {pending ? "Opslaan…" : "Opslaan"}
         </Button>
       </SheetFooter>
+    </fieldset>
     </form>
   );
 }

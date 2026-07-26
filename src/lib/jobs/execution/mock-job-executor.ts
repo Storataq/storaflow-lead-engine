@@ -564,7 +564,7 @@ export class MockJobExecutor {
           organizationId,
           jobId: job.id,
           eventCode: "connector_completed",
-          message: "Connector completed",
+          message: "Connector voltooid",
           sourceCode: connector.code,
           metadata: {
             progress_percent: 100,
@@ -576,7 +576,7 @@ export class MockJobExecutor {
 
         return {
           success: true,
-          message: `Completed — ${persisted.resultsInserted} bedrijven opgeslagen (${connector.code})`,
+          message: `Mock scrape voltooid — ${persisted.resultsInserted} bedrijven opgeslagen (${connector.code})`,
           jobId: job.id,
           status: "completed",
           done: true,

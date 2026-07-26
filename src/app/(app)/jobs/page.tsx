@@ -3,12 +3,13 @@ import { Suspense } from "react";
 
 import { JobsQueue } from "@/components/jobs/jobs-queue";
 import { PageHeader } from "@/components/layout/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/layout/page-skeleton";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 import {
   listScrapeJobs,
   type ScrapeJobWithSearch,
 } from "@/lib/jobs/queries";
+import { toUserFacingError } from "@/lib/ui/user-facing-error";
 
 export const metadata: Metadata = {
   title: "Scrape Jobs",
@@ -28,23 +29,13 @@ async function JobsContent() {
       organizationId: context.organization.id,
     });
   } catch (error) {
-    errorMessage =
-      error instanceof Error ? error.message : "Kon scrapingtaken niet laden.";
+    errorMessage = toUserFacingError(
+      error,
+      "Kon scrapingtaken niet laden. Probeer het opnieuw.",
+    );
   }
 
   return <JobsQueue initialItems={items} initialError={errorMessage} />;
-}
-
-function JobsLoading() {
-  return (
-    <div className="space-y-4">
-      <div className="flex gap-3">
-        <Skeleton className="h-8 w-40" />
-        <Skeleton className="h-8 w-36" />
-      </div>
-      <Skeleton className="h-64 w-full rounded-xl" />
-    </div>
-  );
 }
 
 export default function JobsPage() {
@@ -52,13 +43,13 @@ export default function JobsPage() {
     <div>
       <PageHeader
         title="Scrape Jobs"
-        description="Job queue: Pending, Queued, Running, Paused, Completed, Failed, Cancelled — MockWorker only."
+        description="Jobwachtrij met mock-uitvoering: pending, queued, running, paused, completed, failed of cancelled."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Scrape Jobs" },
         ]}
       />
-      <Suspense fallback={<JobsLoading />}>
+      <Suspense fallback={<PageSkeleton filters={4} variant="table" />}>
         <JobsContent />
       </Suspense>
     </div>

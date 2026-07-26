@@ -108,7 +108,7 @@ export function JobRunnerControls({ jobId, status }: JobRunnerControlsProps) {
     <div className="flex flex-wrap items-center gap-2">
       {isProcessing ? (
         <p className="mr-2 text-sm text-muted-foreground">
-          Connector pipeline actief…
+          Mock scrape bezig…
         </p>
       ) : null}
 
@@ -137,7 +137,7 @@ export function JobRunnerControls({ jobId, status }: JobRunnerControlsProps) {
             void run(pauseScrapeAction);
           }}
         >
-          Pause
+          Pauzeren
         </Button>
       ) : null}
 
@@ -150,7 +150,7 @@ export function JobRunnerControls({ jobId, status }: JobRunnerControlsProps) {
             void run(resumeScrapeAction);
           }}
         >
-          Resume
+          Hervatten
         </Button>
       ) : null}
 
@@ -163,7 +163,7 @@ export function JobRunnerControls({ jobId, status }: JobRunnerControlsProps) {
             void run(retryScrapeAction);
           }}
         >
-          Retry
+          Opnieuw
         </Button>
       ) : null}
 
@@ -177,7 +177,7 @@ export function JobRunnerControls({ jobId, status }: JobRunnerControlsProps) {
             void run(cancelScrapeAction);
           }}
         >
-          Cancel
+          Annuleren
         </Button>
       ) : null}
 
@@ -191,7 +191,7 @@ export function JobRunnerControls({ jobId, status }: JobRunnerControlsProps) {
           void run(deleteScrapeAction, { afterDelete: true });
         }}
       >
-        Delete
+        Verwijderen
       </Button>
     </div>
   );

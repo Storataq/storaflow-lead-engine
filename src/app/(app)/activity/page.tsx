@@ -22,7 +22,9 @@ export default function ActivityPage() {
       <EmptyState
         icon={Activity}
         title="Nog geen activiteiten"
-        description="Gebeurtenissen zoals organisatie-aanmaak, statuswijzigingen en exports worden hier zichtbaar."
+        description="Gebeurtenissen zoals organisatie-aanmaak, scrapes en exports verschijnen hier zodra auditlogging actief is."
+        actionLabel="Naar dashboard"
+        actionHref="/dashboard"
       />
     </div>
   );

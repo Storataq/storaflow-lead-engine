@@ -15,6 +15,7 @@ import {
 } from "@/lib/jobs/queue-service";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 import { createClient } from "@/lib/supabase/server";
+import { toUserFacingError } from "@/lib/ui/user-facing-error";
 import type { ScrapeJobPriority } from "@/types/database";
 
 export type JobActionResult = {
@@ -38,6 +39,7 @@ function revalidateJobPaths(jobId: string, searchQueryId?: string | null) {
   revalidatePath("/jobs");
   revalidatePath(`/jobs/${jobId}`);
   revalidatePath("/companies");
+  revalidatePath("/contacts");
   revalidatePath("/dashboard");
   if (searchQueryId) {
     revalidatePath(`/zoekopdrachten/${searchQueryId}`);
@@ -143,14 +145,14 @@ export async function startScrapeAction(
     revalidateJobPaths(queued.job.id, searchQueryId);
     return {
       success: true,
-      message: `Scrape job queued (${sourceCode}).`,
+      message: `Mock scrape gestart (${sourceCode}).`,
       jobId: queued.job.id,
       status: "queued",
     };
   } catch (error) {
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Kon job niet starten.",
+      message: toUserFacingError(error, "Kon mock scrape niet starten."),
     };
   }
 }
@@ -174,14 +176,20 @@ export async function startExistingJobAction(
     .eq("id", jobId)
     .maybeSingle();
 
-  if (error) return { success: false, message: error.message, jobId };
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon taak niet laden."),
+      jobId,
+    };
+  }
   if (!job) return { success: false, message: "Taak niet gevonden.", jobId };
 
   const status = normalizeJobStatus(job.status);
   if (status === "completed") {
     return {
       success: false,
-      message: "Completed jobs kunnen niet opnieuw gestart worden. Gebruik Retry.",
+      message: "Voltooide jobs kun je niet opnieuw starten. Gebruik Opnieuw.",
       jobId,
       status,
       done: true,
@@ -315,7 +323,12 @@ export async function deleteScrapeAction(jobId: string): Promise<JobActionResult
     .eq("id", jobId)
     .maybeSingle();
 
-  if (loadError) return { success: false, message: loadError.message };
+  if (loadError) {
+    return {
+      success: false,
+      message: toUserFacingError(loadError, "Kon taak niet laden."),
+    };
+  }
   if (!job) return { success: false, message: "Taak niet gevonden." };
 
   const { error } = await supabase
@@ -327,14 +340,13 @@ export async function deleteScrapeAction(jobId: string): Promise<JobActionResult
   if (error) {
     return {
       success: false,
-      message:
-        error.message.includes("policy") || error.code === "42501"
-          ? "Verwijderen vereist owner/admin (en migratie 000007)."
-          : error.message,
+      message: toUserFacingError(error, "Kon job niet verwijderen."),
     };
   }
 
   revalidatePath("/jobs");
+  revalidatePath("/companies");
+  revalidatePath("/contacts");
   revalidatePath("/dashboard");
   if (job.search_query_id) {
     revalidatePath(`/zoekopdrachten/${job.search_query_id}`);
@@ -365,7 +377,12 @@ export async function advanceMockScrapeAction(
     .eq("id", jobId)
     .maybeSingle();
 
-  if (jobError) return { success: false, message: jobError.message };
+  if (jobError) {
+    return {
+      success: false,
+      message: toUserFacingError(jobError, "Kon taak niet laden."),
+    };
+  }
   if (!job) return { success: false, message: "Taak niet gevonden." };
 
   let searchQuery = null;

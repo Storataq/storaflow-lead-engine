@@ -8,6 +8,7 @@ import {
   searchQueryFormSchema,
 } from "@/lib/searches/schema";
 import { createClient } from "@/lib/supabase/server";
+import { toUserFacingError } from "@/lib/ui/user-facing-error";
 import type { SearchCriteriaStatus } from "@/types/database";
 import type { Database } from "@/types/supabase";
 
@@ -135,7 +136,7 @@ export async function createSearchQueryAction(
   if (error || !data) {
     return {
       success: false,
-      message: error?.message ?? "Opslaan mislukt",
+      message: toUserFacingError(error, "Opslaan mislukt. Probeer het opnieuw."),
     };
   }
 
@@ -210,7 +211,10 @@ export async function updateSearchQueryAction(
     .eq("organization_id", context.organization.id);
 
   if (error) {
-    return { success: false, message: error.message };
+    return {
+      success: false,
+      message: toUserFacingError(error, "Opslaan mislukt. Probeer het opnieuw."),
+    };
   }
 
   if (user) {

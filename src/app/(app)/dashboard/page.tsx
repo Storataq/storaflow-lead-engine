@@ -21,6 +21,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { countCompanies } from "@/lib/companies/queries";
+import { countContactSignals } from "@/lib/contacts/queries";
 import { formatCountryList } from "@/lib/international/display";
 import { listScrapeJobs } from "@/lib/jobs/queries";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
@@ -32,18 +34,25 @@ export const metadata: Metadata = {
 
 export default async function DashboardPage() {
   const context = await getActiveOrganization();
-  const searches = context
+  const orgId = context?.organization.id;
+  const searches = orgId
     ? await listSearchQueries({
-        organizationId: context.organization.id,
+        organizationId: orgId,
         sort: "newest",
       }).catch(() => [])
     : [];
-  const jobs = context
+  const jobs = orgId
     ? await listScrapeJobs({
-        organizationId: context.organization.id,
+        organizationId: orgId,
         sort: "newest",
       }).catch(() => [])
     : [];
+  const companyCount = orgId
+    ? await countCompanies(orgId).catch(() => 0)
+    : 0;
+  const contactCount = orgId
+    ? await countContactSignals(orgId).catch(() => 0)
+    : 0;
   const recentSearches = searches.slice(0, 5);
   const recentJobs = jobs.slice(0, 5);
   const activeSearchCount = searches.filter(
@@ -61,27 +70,41 @@ export default async function DashboardPage() {
   const failedJobs = jobs.filter((item) => item.status === "failed").length;
 
   const stats = [
-    { label: "Bedrijven", value: "—", icon: Building2 },
-    { label: "Contactgegevens", value: "—", icon: Mail },
+    {
+      label: "Bedrijven",
+      value: String(companyCount),
+      icon: Building2,
+      href: "/companies",
+    },
+    {
+      label: "Contactgegevens",
+      value: String(contactCount),
+      icon: Mail,
+      href: "/contacts",
+    },
     {
       label: "Zoekopdrachten",
       value: String(searches.length),
       icon: Search,
+      href: "/zoekopdrachten",
     },
     {
       label: "Actieve zoekopdrachten",
       value: String(activeSearchCount),
       icon: CheckCircle2,
+      href: "/zoekopdrachten",
     },
     {
       label: "Actieve taken",
       value: String(activeJobs),
       icon: ListTodo,
+      href: "/jobs",
     },
     {
       label: "Mislukte taken",
       value: String(failedJobs),
       icon: XCircle,
+      href: "/jobs",
     },
   ] as const;
 
@@ -101,19 +124,21 @@ export default async function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {stats.map((stat) => (
-          <Card key={stat.label} className="shadow-none">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.label}
-              </CardTitle>
-              <stat.icon className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold tracking-tight">
-                {stat.value}
-              </div>
-            </CardContent>
-          </Card>
+          <Link key={stat.label} href={stat.href} className="group">
+            <Card className="h-full shadow-none transition-colors group-hover:bg-muted/30">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.label}
+                </CardTitle>
+                <stat.icon className="size-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-semibold tracking-tight">
+                  {stat.value}
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 

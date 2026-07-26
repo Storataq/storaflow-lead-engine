@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,8 @@ type EmptyStateProps = {
   description: string;
   actionLabel?: string;
   actionHref?: string;
+  /** Custom primary action (e.g. open a sheet). Prefer over actionHref when both set. */
+  action?: ReactNode;
 };
 
 export function EmptyState({
@@ -24,23 +27,29 @@ export function EmptyState({
   description,
   actionLabel,
   actionHref,
+  action,
 }: EmptyStateProps) {
+  const linkAction =
+    !action && actionLabel && actionHref ? (
+      <Button nativeButton={false} render={<Link href={actionHref} />}>
+        {actionLabel}
+      </Button>
+    ) : null;
+
   return (
     <Card className="border-dashed shadow-none">
       <CardHeader className="items-center text-center">
         <div className="mb-2 flex size-12 items-center justify-center rounded-full bg-muted">
-          <Icon className="size-5 text-muted-foreground" />
+          <Icon className="size-5 text-muted-foreground" aria-hidden />
         </div>
         <CardTitle className="text-base">{title}</CardTitle>
         <CardDescription className="max-w-md text-pretty">
           {description}
         </CardDescription>
       </CardHeader>
-      {actionLabel && actionHref ? (
+      {action || linkAction ? (
         <CardContent className="flex justify-center pb-8">
-          <Button nativeButton={false} render={<Link href={actionHref} />}>
-            {actionLabel}
-          </Button>
+          {action ?? linkAction}
         </CardContent>
       ) : null}
     </Card>

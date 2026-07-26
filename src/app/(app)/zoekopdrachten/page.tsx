@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { PageHeader } from "@/components/layout/page-header";
+import { PageSkeleton } from "@/components/layout/page-skeleton";
 import { SearchesManager } from "@/components/searches/searches-manager";
-import { Skeleton } from "@/components/ui/skeleton";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 import { listSearchQueries } from "@/lib/searches/queries";
 import type { SearchQueryRow } from "@/lib/searches/queries";
+import { toUserFacingError } from "@/lib/ui/user-facing-error";
 
 export const metadata: Metadata = {
   title: "Zoekopdrachten",
@@ -26,25 +27,14 @@ async function SearchesContent() {
       organizationId: context.organization.id,
     });
   } catch (error) {
-    errorMessage =
-      error instanceof Error ? error.message : "Kon zoekopdrachten niet laden.";
+    errorMessage = toUserFacingError(
+      error,
+      "Kon zoekopdrachten niet laden. Probeer het opnieuw.",
+    );
   }
 
   return (
     <SearchesManager initialItems={items} initialError={errorMessage} />
-  );
-}
-
-function SearchesLoading() {
-  return (
-    <div className="space-y-4">
-      <div className="flex gap-3">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-8 w-36" />
-        <Skeleton className="h-8 w-36" />
-      </div>
-      <Skeleton className="h-64 w-full rounded-xl" />
-    </div>
   );
 }
 
@@ -59,7 +49,7 @@ export default function ZoekopdrachtenPage() {
           { label: "Zoekopdrachten" },
         ]}
       />
-      <Suspense fallback={<SearchesLoading />}>
+      <Suspense fallback={<PageSkeleton filters={3} variant="table" />}>
         <SearchesContent />
       </Suspense>
     </div>

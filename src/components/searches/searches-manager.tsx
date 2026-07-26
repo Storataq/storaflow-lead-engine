@@ -10,6 +10,7 @@ import { startScrapeAction } from "@/lib/jobs/actions";
 import { SearchQuerySheet } from "@/components/searches/search-query-sheet";
 import { SearchStatusBadge } from "@/components/searches/search-status-badge";
 import { EmptyState } from "@/components/layout/empty-state";
+import { TruncatedText } from "@/components/layout/truncated-text";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -218,17 +219,26 @@ export function SearchesManager({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row">
           <div className="relative w-full sm:max-w-xs">
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search
+              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <label htmlFor="searches-query" className="sr-only">
+              Zoekopdrachten filteren
+            </label>
             <Input
+              id="searches-query"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Zoeken op naam, stad, keyword…"
               className="pl-8"
+              aria-label="Zoekopdrachten filteren"
             />
           </div>
           <select
-            className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             value={status}
+            aria-label="Filter op status"
             onChange={(event) =>
               setStatus(event.target.value as SearchCriteriaStatus | "all")
             }
@@ -241,8 +251,9 @@ export function SearchesManager({
             ))}
           </select>
           <select
-            className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+            className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             value={sort}
+            aria-label="Sorteer zoekopdrachten"
             onChange={(event) =>
               setSort(event.target.value as SearchSortOption)
             }
@@ -258,22 +269,24 @@ export function SearchesManager({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="space-y-3">
-          <EmptyState
-            icon={Search}
-            title="Nog geen zoekopdrachten"
-            description={
-              items.length === 0
-                ? "Maak je eerste zoekopdracht."
-                : "Geen zoekopdrachten gevonden voor deze filters."
-            }
-          />
-          {items.length === 0 ? (
-            <div className="flex justify-center">
+        <EmptyState
+          icon={Search}
+          title={
+            items.length === 0
+              ? "Nog geen zoekopdrachten"
+              : "Geen resultaten"
+          }
+          description={
+            items.length === 0
+              ? "Maak je eerste zoekopdracht om mock scrapes te starten."
+              : "Geen zoekopdrachten gevonden voor deze filters."
+          }
+          action={
+            items.length === 0 ? (
               <Button onClick={openCreate}>Nieuwe zoekopdracht</Button>
-            </div>
-          ) : null}
-        </div>
+            ) : undefined
+          }
+        />
       ) : (
         <>
           <div className="hidden overflow-x-auto rounded-xl border border-border lg:block">
@@ -311,17 +324,23 @@ export function SearchesManager({
                     <TableCell>
                       <SearchStatusBadge status={item.status} />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {countriesPreview(item.countries ?? [])}
+                    <TableCell>
+                      <TruncatedText
+                        value={countriesPreview(item.countries ?? [])}
+                      />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {joinPreview(item.cities ?? [])}
+                    <TableCell>
+                      <TruncatedText value={joinPreview(item.cities ?? [])} />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {joinPreview(item.keywords ?? [])}
+                    <TableCell>
+                      <TruncatedText
+                        value={joinPreview(item.keywords ?? [])}
+                      />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {sourcesPreview(item.sources ?? [])}
+                    <TableCell>
+                      <TruncatedText
+                        value={sourcesPreview(item.sources ?? [])}
+                      />
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(item.updated_at)}
@@ -471,7 +490,7 @@ export function SearchesManager({
                 void confirmDelete();
               }}
             >
-              Verwijderen
+              {pending ? "Verwijderen…" : "Verwijderen"}
             </Button>
           </DialogFooter>
         </DialogContent>

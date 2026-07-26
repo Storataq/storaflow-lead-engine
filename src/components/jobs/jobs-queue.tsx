@@ -7,6 +7,8 @@ import { ListTodo } from "lucide-react";
 import { JobProgressBar } from "@/components/jobs/job-progress-bar";
 import { JobStatusBadge } from "@/components/jobs/job-status-badge";
 import { EmptyState } from "@/components/layout/empty-state";
+import { TruncatedText } from "@/components/layout/truncated-text";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -140,9 +143,9 @@ export function JobsQueue({ initialItems, initialError }: JobsQueueProps) {
 
   if (initialError) {
     return (
-      <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-        {initialError}
-      </p>
+      <Alert variant="destructive">
+        <AlertDescription>{initialError}</AlertDescription>
+      </Alert>
     );
   }
 
@@ -155,6 +158,7 @@ export function JobsQueue({ initialItems, initialError }: JobsQueueProps) {
             <button
               key={item.key}
               type="button"
+              aria-pressed={active}
               className={cn(
                 "rounded-xl border border-border bg-card text-left transition-colors hover:bg-muted/40",
                 active && "border-primary ring-2 ring-primary/20",
@@ -180,15 +184,21 @@ export function JobsQueue({ initialItems, initialError }: JobsQueueProps) {
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
-        <input
-          className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+        <label htmlFor="jobs-search-name" className="sr-only">
+          Filter op zoekopdracht
+        </label>
+        <Input
+          id="jobs-search-name"
+          className="sm:max-w-xs"
           placeholder="Zoekopdracht…"
           value={searchName}
+          aria-label="Filter op zoekopdracht"
           onChange={(event) => setSearchName(event.target.value)}
         />
         <select
-          className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+          className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           value={status}
+          aria-label="Filter op status"
           onChange={(event) => {
             setBucket("all");
             setStatus(event.target.value as StatusFilter);
@@ -205,8 +215,9 @@ export function JobsQueue({ initialItems, initialError }: JobsQueueProps) {
           <option value="cancelled">Cancelled</option>
         </select>
         <select
-          className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+          className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           value={priority}
+          aria-label="Filter op prioriteit"
           onChange={(event) =>
             setPriority(event.target.value as ScrapeJobPriority | "all")
           }
@@ -219,8 +230,9 @@ export function JobsQueue({ initialItems, initialError }: JobsQueueProps) {
           ))}
         </select>
         <select
-          className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+          className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           value={source}
+          aria-label="Filter op bron"
           onChange={(event) => setSource(event.target.value)}
         >
           <option value="all">Alle bronnen</option>
@@ -230,15 +242,17 @@ export function JobsQueue({ initialItems, initialError }: JobsQueueProps) {
             </option>
           ))}
         </select>
-        <input
+        <Input
           type="date"
-          className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+          className="w-auto"
           value={dateFrom}
+          aria-label="Filter vanaf datum"
           onChange={(event) => setDateFrom(event.target.value)}
         />
         <select
-          className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+          className="flex h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           value={sort}
+          aria-label="Sorteer jobs"
           onChange={(event) => setSort(event.target.value as JobSortOption)}
         >
           {JOB_SORT_OPTIONS.map((option) => (
@@ -259,8 +273,22 @@ export function JobsQueue({ initialItems, initialError }: JobsQueueProps) {
       {filtered.length === 0 ? (
         <EmptyState
           icon={ListTodo}
-          title="Geen scrape jobs"
-          description="Start een scrape vanuit een zoekopdracht. De MockWorker simuleert progress lokaal."
+          title={
+            initialItems.length === 0
+              ? "Nog geen scrape jobs"
+              : "Geen resultaten"
+          }
+          description={
+            initialItems.length === 0
+              ? "Voer een eerste mock scrape uit vanuit een zoekopdracht."
+              : "Geen jobs gevonden voor deze filters."
+          }
+          actionLabel={
+            initialItems.length === 0 ? "Naar zoekopdrachten" : undefined
+          }
+          actionHref={
+            initialItems.length === 0 ? "/zoekopdrachten" : undefined
+          }
         />
       ) : (
         <>
@@ -287,7 +315,10 @@ export function JobsQueue({ initialItems, initialError }: JobsQueueProps) {
                         href={`/jobs/${item.id}`}
                         className="font-medium hover:underline"
                       >
-                        {item.search_queries?.name ?? "Zoekopdracht"}
+                        <TruncatedText
+                          value={item.search_queries?.name ?? "Zoekopdracht"}
+                          className="text-foreground"
+                        />
                       </Link>
                     </TableCell>
                     <TableCell>

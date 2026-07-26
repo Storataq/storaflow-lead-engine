@@ -45,8 +45,9 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-base">Scrapinggedrag</CardTitle>
           <CardDescription>
-            Deze defaults staan al in de database (`organization_settings`) en
-            worden bij organisatie-aanmaak toegepast.
+            Deze defaults staan in de database (`organization_settings`) en
+            worden bij organisatie-aanmaak toegepast. Live scraping volgt in een
+            latere fase.
           </CardDescription>
         </CardHeader>
         <CardContent>

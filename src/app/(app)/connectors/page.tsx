@@ -15,7 +15,7 @@ export default function ConnectorsPage() {
     <div>
       <PageHeader
         title="Connector Management"
-        description="Modulaire wereldwijde connectors — momenteel uitsluitend mock (geen netwerk)."
+        description="Modulaire connectors voor discovery. Momenteel uitsluitend mock — geen live netwerk."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Connectors" },

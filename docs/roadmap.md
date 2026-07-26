@@ -1,29 +1,24 @@
 # Roadmap
 
-## Fase 1 — Fundament (klaar om te reviewen)
+## Klaar (pilot)
 
-- Next.js App Router + TypeScript + Tailwind + shadcn/ui
-- Supabase Auth + organizations
-- Database schema + RLS
-- App-shell + lege MVP-pagina’s
-- README / env / docs
+- Fundament: Next.js, Supabase Auth/orgs, RLS, app-shell
+- Zoekopdrachten (CRUD, preview, bronnen)
+- Scrape jobs + mock executor + persistente resultaten
+- Connector framework (mock + Google Maps MVP mock)
+- Bedrijven- en contactoverzicht uit opgeslagen scrape-data
+- UI-polish: loading/empty/error states, toasts, responsive tabellen
 
-## Fase 2 — Zoekopdrachten & jobs
+## Fase 11+ — Live discovery (nog niet gestart)
 
-- Formulier nieuwe zoekopdracht
-- Scrape job aanmaken/starten
-- Jobdetail met voortgang
+- Echte Google Maps / Places (geen browser automation in deze fase)
+- Rate limiting, retries, veilige defaults
+- Geen CAPTCHA-omzeiling, geen private data
 
-## Fase 3 — Worker & scraping
+## Latere kwaliteit & export
 
-- Node.js worker met job-claim
-- Modulaire adapters (manual URL list eerst)
-- Veilige crawler + contactextractie
-- Foutregistratie
-
-## Fase 4 — Kwaliteit & export
-
-- Normalisatie + deduplicatie-review
+- Website crawler + contactextractie
+- Normalisatie / deduplicatie-review UI
 - Uitsluitlijst-handhaving
 - CSV/Excel export
 

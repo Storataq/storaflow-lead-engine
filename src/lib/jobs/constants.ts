@@ -50,11 +50,18 @@ export const MOCK_PROGRESS_STEPS = [10, 35, 60, 85, 100] as const;
 export const PIPELINE_PROGRESS = {
   created: 0,
   queued: 5,
+  /** Initializing connector */
   connectorInitialized: 10,
+  /** Searching */
   searchCompleted: 25,
-  normalized: 45,
-  validated: 60,
+  /** Parsing */
+  parsing: 35,
+  /** Normalizing */
+  normalized: 50,
+  /** Validating */
+  validated: 65,
   deduplicated: 75,
+  /** Persisting */
   persisting: 90,
   completed: 100,
 } as const;

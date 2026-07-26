@@ -35,7 +35,10 @@ export type GoogleMapsSearchMockResponse = {
   status: "OK" | "ZERO_RESULTS" | "MOCK";
   query: string;
   results: GoogleMapsPlace[];
+  /** Pagination — designed for multi-page Places later; MVP returns one page. */
+  currentPage: number;
   nextPageToken: string | null;
+  hasMore: boolean;
 };
 
 export type GoogleMapsDetailsMockResponse = {

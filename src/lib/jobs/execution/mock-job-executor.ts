@@ -1,7 +1,7 @@
 /**
- * Central mock job execution service.
+ * Central job execution service for foundation connectors (Mock / Google Maps MVP).
  *
- * Flow: load job → activate → MockConnector + pipeline → persist → complete/fail
+ * Flow: load job → activate → ConnectorFactory → pipeline → persist → complete/fail
  * Progress only increases. No external network.
  */
 
@@ -25,11 +25,14 @@ import {
   fail as queueFail,
 } from "@/lib/jobs/queue-service";
 import type { ScrapeJobRow } from "@/lib/jobs/queries";
+import { resolveJobConnectorCode } from "@/lib/jobs/resolve-connector-code";
 import { ConnectorError } from "@/lib/scraping/connectors/errors";
 import {
   ConnectorFactory,
   defaultConnectorFactory,
 } from "@/lib/scraping/connectors/factory";
+import { GOOGLE_MAPS_CONNECTOR_CODE } from "@/lib/scraping/connectors/google-maps";
+import { validateGoogleMapsResults } from "@/lib/scraping/connectors/google-maps/validator";
 import { InMemoryConnectorLogger } from "@/lib/scraping/connectors/logger";
 import { enrichWithAiPlaceholder } from "@/lib/scraping/connectors/pipeline/ai-enrichment";
 import { deduplicateBusinessResults } from "@/lib/scraping/connectors/pipeline/deduplicator";
@@ -58,7 +61,7 @@ function safeErrorMessage(error: unknown): string {
     const firstLine = error.message.split("\n")[0]?.trim() ?? "Onbekende fout";
     return firstLine.slice(0, 240);
   }
-  return "Onbekende fout tijdens mock scrape.";
+  return "Onbekende fout tijdens scrape.";
 }
 
 async function bumpProgress(
@@ -87,10 +90,10 @@ function buildSearchInput(searchQuery: SearchQueryRow): ConnectorSearchInput {
     ? searchQuery.keywords
     : searchQuery.keyword
       ? [searchQuery.keyword]
-      : ["mock businesses"];
+      : ["local businesses"];
 
   return {
-    query: keywords.join(" ") || "mock businesses",
+    query: keywords.join(" ") || "local businesses",
     countries: searchQuery.countries?.length
       ? searchQuery.countries
       : searchQuery.country
@@ -107,8 +110,20 @@ function buildSearchInput(searchQuery: SearchQueryRow): ConnectorSearchInput {
         ? [searchQuery.region]
         : undefined,
     languages: searchQuery.languages ?? undefined,
-    limit: 25,
+    limit: 20,
   };
+}
+
+function resolveSourceCode(
+  job: ScrapeJobRow,
+  searchQuery: SearchQueryRow,
+): string {
+  if (job.current_source_code) {
+    if (defaultConnectorFactory.tryCreate(job.current_source_code)) {
+      return job.current_source_code;
+    }
+  }
+  return resolveJobConnectorCode(searchQuery.sources ?? []);
 }
 
 export type MockJobExecutorOptions = {
@@ -172,7 +187,6 @@ export class MockJobExecutor {
       return this.activate(supabase, organizationId, job);
     }
 
-    // active
     if (!searchQuery) {
       await queueFail(
         supabase,
@@ -265,7 +279,7 @@ export class MockJobExecutor {
     job: ScrapeJobRow,
     searchQuery: SearchQueryRow,
   ): Promise<MockJobExecutionResult> {
-    // Claim exclusive pipeline run (prevents double starts / double polls).
+    const sourceCode = resolveSourceCode(job, searchQuery);
     const now = new Date().toISOString();
     const { data: claimed, error: claimError } = await supabase
       .from("scrape_jobs")
@@ -276,7 +290,7 @@ export class MockJobExecutor {
           PIPELINE_PROGRESS.connectorInitialized,
         ),
         last_heartbeat_at: now,
-        current_source_code: DEFAULT_CONNECTOR_CODE,
+        current_source_code: sourceCode,
       })
       .eq("id", job.id)
       .eq("organization_id", organizationId)
@@ -296,7 +310,6 @@ export class MockJobExecutor {
     }
 
     if (!claimed) {
-      // Already running or finished — wait for next poll / terminal state.
       const { data: latest } = await supabase
         .from("scrape_jobs")
         .select("status, progress_percent")
@@ -330,18 +343,17 @@ export class MockJobExecutor {
       await appendJobLog(supabase, {
         organizationId,
         jobId: job.id,
-        eventCode: "connector_initialized",
-        message: "Connector initialized",
-        sourceCode: DEFAULT_CONNECTOR_CODE,
+        eventCode: "initializing",
+        message: "Initializing",
+        sourceCode,
         metadata: { progress_percent: progress },
       });
 
-      const connector = this.factory.create(DEFAULT_CONNECTOR_CODE);
+      const connector = this.factory.create(sourceCode);
       const logger = new InMemoryConnectorLogger();
       const input = buildSearchInput(searchQuery);
 
       await connector.connect();
-      logger.info(connector.code, "Connected");
 
       try {
         const valid = await connector.validate(input);
@@ -351,6 +363,19 @@ export class MockJobExecutor {
             connectorCode: connector.code,
           });
         }
+
+        await appendJobLog(supabase, {
+          organizationId,
+          jobId: job.id,
+          eventCode: "search_started",
+          message: "Search started",
+          sourceCode: connector.code,
+          metadata: {
+            query: input.query,
+            countries: input.countries ?? [],
+            cities: input.cities ?? [],
+          },
+        });
 
         const searched = await connector.search(input);
         progress = await bumpProgress(
@@ -364,8 +389,8 @@ export class MockJobExecutor {
         await appendJobLog(supabase, {
           organizationId,
           jobId: job.id,
-          eventCode: "mock_results_fetched",
-          message: "Mock results fetched",
+          eventCode: "results_received",
+          message: "Results received",
           sourceCode: connector.code,
           metadata: {
             progress_percent: progress,
@@ -373,7 +398,24 @@ export class MockJobExecutor {
           },
         });
 
+        progress = await bumpProgress(
+          supabase,
+          organizationId,
+          job.id,
+          progress,
+          PIPELINE_PROGRESS.parsing,
+          { pages_processed: 3 },
+        );
         const parsed = parseSearchResults(searched.results);
+        await appendJobLog(supabase, {
+          organizationId,
+          jobId: job.id,
+          eventCode: "parsing_complete",
+          message: "Parsing complete",
+          sourceCode: connector.code,
+          metadata: { count: parsed.length, progress_percent: progress },
+        });
+
         const normalized = normalizeBusinessResults(parsed);
         progress = await bumpProgress(
           supabase,
@@ -381,13 +423,13 @@ export class MockJobExecutor {
           job.id,
           progress,
           PIPELINE_PROGRESS.normalized,
-          { pages_processed: 3 },
+          { pages_processed: 4 },
         );
         await appendJobLog(supabase, {
           organizationId,
           jobId: job.id,
-          eventCode: "normalization_completed",
-          message: "Normalization completed",
+          eventCode: "normalization_complete",
+          message: "Normalization complete",
           sourceCode: connector.code,
           metadata: {
             progress_percent: progress,
@@ -395,7 +437,26 @@ export class MockJobExecutor {
           },
         });
 
-        const validation = validateBusinessResults(normalized);
+        const validation =
+          connector.code === GOOGLE_MAPS_CONNECTOR_CODE
+            ? validateGoogleMapsResults(normalized)
+            : validateBusinessResults(normalized);
+
+        for (const issue of validation.issues) {
+          await appendJobLog(supabase, {
+            organizationId,
+            jobId: job.id,
+            eventCode: "validation_issue",
+            message: issue.message,
+            level: "warn",
+            sourceCode: connector.code,
+            metadata: {
+              sourceId: issue.sourceId,
+              field: issue.field,
+            },
+          });
+        }
+
         progress = await bumpProgress(
           supabase,
           organizationId,
@@ -403,15 +464,15 @@ export class MockJobExecutor {
           progress,
           PIPELINE_PROGRESS.validated,
           {
-            pages_processed: 4,
+            pages_processed: 5,
             error_count: (job.error_count ?? 0) + validation.invalid.length,
           },
         );
         await appendJobLog(supabase, {
           organizationId,
           jobId: job.id,
-          eventCode: "validation_completed",
-          message: "Validation completed",
+          eventCode: "validation_complete",
+          message: "Validation complete",
           sourceCode: connector.code,
           metadata: {
             progress_percent: progress,
@@ -427,13 +488,13 @@ export class MockJobExecutor {
           job.id,
           progress,
           PIPELINE_PROGRESS.deduplicated,
-          { pages_processed: 5 },
+          { pages_processed: 6 },
         );
         await appendJobLog(supabase, {
           organizationId,
           jobId: job.id,
-          eventCode: "deduplication_completed",
-          message: "Deduplication completed",
+          eventCode: "deduplication_complete",
+          message: "Deduplication complete",
           sourceCode: connector.code,
           metadata: {
             progress_percent: progress,
@@ -453,7 +514,7 @@ export class MockJobExecutor {
           job.id,
           progress,
           PIPELINE_PROGRESS.persisting,
-          { pages_processed: 6 },
+          { pages_processed: 7 },
         );
 
         const persisted = await persistPipelineResults(supabase, {
@@ -466,8 +527,8 @@ export class MockJobExecutor {
         await appendJobLog(supabase, {
           organizationId,
           jobId: job.id,
-          eventCode: "results_persisted",
-          message: "Results persisted",
+          eventCode: "persist_complete",
+          message: "Persist complete",
           sourceCode: connector.code,
           metadata: {
             progress_percent: progress,
@@ -502,8 +563,8 @@ export class MockJobExecutor {
         await appendJobLog(supabase, {
           organizationId,
           jobId: job.id,
-          eventCode: "job_completed",
-          message: "Job completed",
+          eventCode: "connector_completed",
+          message: "Connector completed",
           sourceCode: connector.code,
           metadata: {
             progress_percent: 100,
@@ -515,7 +576,7 @@ export class MockJobExecutor {
 
         return {
           success: true,
-          message: `Completed — ${persisted.resultsInserted} bedrijven opgeslagen`,
+          message: `Completed — ${persisted.resultsInserted} bedrijven opgeslagen (${connector.code})`,
           jobId: job.id,
           status: "completed",
           done: true,
@@ -532,7 +593,7 @@ export class MockJobExecutor {
         eventCode: "job_failed",
         message: `Job failed — ${message}`,
         level: "error",
-        sourceCode: DEFAULT_CONNECTOR_CODE,
+        sourceCode,
       });
 
       return {

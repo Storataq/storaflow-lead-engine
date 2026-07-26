@@ -50,6 +50,29 @@ function formatDate(value: string | null): string {
   }).format(new Date(value));
 }
 
+function readPayloadString(
+  payload: unknown,
+  key: string,
+): string | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return null;
+  }
+  const value = (payload as Record<string, unknown>)[key];
+  if (typeof value === "string" && value.trim()) return value;
+  if (Array.isArray(value) && typeof value[0] === "string") return value[0];
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return null;
+}
+
+function readConfidence(payload: unknown): string {
+  const raw = readPayloadString(payload, "confidence");
+  if (!raw) return "—";
+  const num = Number(raw);
+  return Number.isFinite(num) ? num.toFixed(2) : "—";
+}
+
 export default async function JobDetailPage({ params }: JobDetailPageProps) {
   const { id } = await params;
   const context = await getActiveOrganization();
@@ -75,7 +98,11 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
     <div>
       <PageHeader
         title={searchName}
-        description="MockConnector-pipeline met persistente resultaten in de database."
+        description={
+          job.current_source_code === "google_maps"
+            ? "Google Maps connector MVP — persistente resultaten via de bestaande pipeline."
+            : "Connector-pipeline met persistente resultaten in de database."
+        }
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Scrape Jobs", href: "/jobs" },
@@ -261,8 +288,8 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           <CardHeader>
             <CardTitle className="text-base">Opgeslagen resultaten</CardTitle>
             <CardDescription>
-              Persistente scrape_results uit de database (niet opnieuw
-              gegenereerd).
+              Persistente scrape_results (Naam, Categorie, Website, Telefoon,
+              Stad, Land, Confidence).
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -271,29 +298,24 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                 Nog geen resultaten.
               </p>
             ) : (
-              <div className="max-h-80 overflow-auto rounded-lg border border-border">
+              <div className="max-h-96 overflow-auto rounded-lg border border-border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Bedrijf</TableHead>
-                      <TableHead>Land</TableHead>
-                      <TableHead>Stad</TableHead>
-                      <TableHead>Branche</TableHead>
+                      <TableHead>Naam</TableHead>
+                      <TableHead>Categorie</TableHead>
                       <TableHead>Website</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>Telefoon</TableHead>
+                      <TableHead>Stad</TableHead>
+                      <TableHead>Land</TableHead>
+                      <TableHead>Confidence</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {results.map((result) => (
                       <TableRow key={result.id}>
-                        <TableCell>
-                          <p className="font-medium">{result.company_name}</p>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {result.country ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {result.city ?? "—"}
+                        <TableCell className="font-medium">
+                          {result.company_name}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {result.industry ?? "—"}
@@ -302,7 +324,17 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                           {result.website_url ?? "—"}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {result.status}
+                          {readPayloadString(result.raw_payload, "phones") ??
+                            "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {result.city ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {result.country ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {readConfidence(result.raw_payload)}
                         </TableCell>
                       </TableRow>
                     ))}

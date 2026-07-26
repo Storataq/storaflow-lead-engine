@@ -2,11 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
-import {
-  DEFAULT_CONNECTOR_CODE,
-  normalizeJobStatus,
-} from "@/lib/jobs/constants";
+import { normalizeJobStatus } from "@/lib/jobs/constants";
 import { mockJobExecutor } from "@/lib/jobs/execution/mock-job-executor";
+import { resolveJobConnectorCode } from "@/lib/jobs/resolve-connector-code";
 import {
   cancel as queueCancel,
   createDraftJob,
@@ -47,7 +45,7 @@ function revalidateJobPaths(jobId: string, searchQueryId?: string | null) {
 }
 
 /**
- * Starts exactly one mock scrape job for a search query.
+ * Starts exactly one scrape job for a search query (Google Maps MVP by default).
  * Blocks duplicate in-flight jobs for the same search query.
  * organization_id always comes from the server-side org context.
  */
@@ -95,17 +93,19 @@ export async function startScrapeAction(
     revalidateJobPaths(existing.id, searchQueryId);
     return {
       success: true,
-      message: "Er loopt al een mock scrape voor deze zoekopdracht.",
+      message: "Er loopt al een scrape voor deze zoekopdracht.",
       jobId: existing.id,
       status: existing.status,
     };
   }
 
+  const sourceCode = resolveJobConnectorCode(searchQuery.sources ?? []);
+
   try {
     const draft = await createDraftJob(supabase, {
       organizationId: orgId,
       searchQueryId: searchQuery.id,
-      sourceCode: DEFAULT_CONNECTOR_CODE,
+      sourceCode,
       priority,
     });
 
@@ -121,7 +121,7 @@ export async function startScrapeAction(
     revalidateJobPaths(queued.job.id, searchQueryId);
     return {
       success: true,
-      message: "Mock scrape job queued.",
+      message: `Scrape job queued (${sourceCode}).`,
       jobId: queued.job.id,
       status: "queued",
     };

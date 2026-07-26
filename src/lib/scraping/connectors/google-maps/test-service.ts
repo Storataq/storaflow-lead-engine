@@ -83,7 +83,9 @@ export class GoogleMapsMockTestService {
         health,
       });
 
-      const mockResponse = connector.mockSearch(input);
+      const mockResponse = connector.mockSearch(input, {
+        includeInvalidSamples: true,
+      });
       logger.info(code, "Parsing", {
         status: mockResponse.status,
         count: mockResponse.results.length,

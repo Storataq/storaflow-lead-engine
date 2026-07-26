@@ -386,18 +386,37 @@ export function getGoogleMapsMockPlaces(options?: {
   }
 
   if (query && query.length >= 2) {
-    places = places.filter(
-      (place) =>
-        place.name.toLowerCase().includes(query) ||
-        place.types.some((type) => type.toLowerCase().includes(query)) ||
-        (place.primaryType ?? "").toLowerCase().includes(query) ||
-        place.city.toLowerCase().includes(query),
-    );
-  }
+    const tokens = query
+      .toLowerCase()
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter((token) => token.length >= 3);
 
-  // Keep a stable non-empty mock set for broad queries.
-  if (places.length === 0) {
-    places = GOOGLE_MAPS_MOCK_PLACES.slice(0, Math.min(limit, 20));
+    const matched = places.filter((place) => {
+      const haystack = [
+        place.name,
+        place.primaryType ?? "",
+        ...place.types,
+        place.city,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return tokens.some((token) => {
+        if (haystack.includes(token)) return true;
+        if (
+          (token.includes("flower") || token.includes("bloem")) &&
+          (haystack.includes("florist") || haystack.includes("petal"))
+        ) {
+          return true;
+        }
+        if (token.includes("shop") && haystack.includes("store")) return true;
+        return false;
+      });
+    });
+
+    // Keep geo filters; only relax keyword when nothing matched.
+    places = matched.length > 0 ? matched : places;
   }
 
   return places.slice(0, Math.max(1, limit));

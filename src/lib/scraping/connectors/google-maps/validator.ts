@@ -92,6 +92,32 @@ export function validateGoogleMapsResult(
     });
   }
 
+  if (
+    item.latitude == null ||
+    !Number.isFinite(item.latitude) ||
+    item.latitude < -90 ||
+    item.latitude > 90
+  ) {
+    issues.push({
+      sourceId: item.sourceId,
+      field: "latitude",
+      message: "Latitude ontbreekt of is ongeldig",
+    });
+  }
+
+  if (
+    item.longitude == null ||
+    !Number.isFinite(item.longitude) ||
+    item.longitude < -180 ||
+    item.longitude > 180
+  ) {
+    issues.push({
+      sourceId: item.sourceId,
+      field: "longitude",
+      message: "Longitude ontbreekt of is ongeldig",
+    });
+  }
+
   return issues;
 }
 

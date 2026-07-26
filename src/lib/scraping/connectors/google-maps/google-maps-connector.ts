@@ -58,6 +58,10 @@ export class GoogleMapsConnector implements Connector {
   private _status: ConnectorStatus = "idle";
   private _config: GoogleMapsConnectorConfig;
   private _shutdown = false;
+  /** Pagination cursor state — reserved for multi-page fetches later. */
+  private _currentPage = 1;
+  private _nextPageToken: string | null = null;
+  private _hasMore = false;
 
   constructor(options: GoogleMapsConnectorOptions = {}) {
     this._config = createGoogleMapsConfig(options.config);
@@ -69,6 +73,18 @@ export class GoogleMapsConnector implements Connector {
 
   get config(): GoogleMapsConnectorConfig {
     return this._config;
+  }
+
+  get currentPage(): number {
+    return this._currentPage;
+  }
+
+  get nextPageToken(): string | null {
+    return this._nextPageToken;
+  }
+
+  get hasMore(): boolean {
+    return this._hasMore;
   }
 
   updateConfig(overrides: Partial<GoogleMapsConnectorConfig>): void {
@@ -118,7 +134,7 @@ export class GoogleMapsConnector implements Connector {
 
   /**
    * Mock search — returns Places-shaped data normalized to CompanyResult.
-   * Future: Places API / Playwright / Puppeteer adapters behind the same signature.
+   * MVP: single page only. Pagination fields are populated for future use.
    */
   async search(input: ConnectorSearchInput): Promise<ConnectorSearchResponse> {
     this.assertReady();
@@ -131,7 +147,11 @@ export class GoogleMapsConnector implements Connector {
       );
     }
 
-    const mock = this.mockSearch(input);
+    const mock = this.mockSearch(input, { page: 1, includeInvalidSamples: false });
+    this._currentPage = mock.currentPage;
+    this._nextPageToken = mock.nextPageToken;
+    this._hasMore = mock.hasMore;
+
     const hits = mock.results.map(placeToSearchHit);
     return this.normalize(hits);
   }
@@ -186,6 +206,9 @@ export class GoogleMapsConnector implements Connector {
           ...(hit.raw ?? {}),
           sourceUrl: hit.sourceUrl,
           provider: "google_maps",
+          currentPage: this._currentPage,
+          nextPageToken: this._nextPageToken,
+          hasMore: this._hasMore,
         },
       };
     });
@@ -197,25 +220,43 @@ export class GoogleMapsConnector implements Connector {
     };
   }
 
-  /** Expose raw mock search for tests / future adapter comparison. */
-  mockSearch(input: ConnectorSearchInput): GoogleMapsSearchMockResponse {
-    const limit = input.limit ?? Math.min(50, this._config.pageSize * this._config.maxPages);
-    const results = getGoogleMapsMockPlaces({
+  /**
+   * Expose raw mock search for tests / future adapter comparison.
+   * Always returns one page in MVP (`hasMore` may still be true).
+   */
+  mockSearch(
+    input: ConnectorSearchInput,
+    options?: { page?: number; includeInvalidSamples?: boolean },
+  ): GoogleMapsSearchMockResponse {
+    const page = options?.page ?? 1;
+    const pageSize = this._config.pageSize;
+    const limit =
+      input.limit ?? Math.min(pageSize, this._config.pageSize * this._config.maxPages);
+
+    const all = getGoogleMapsMockPlaces({
       countries: input.countries?.length
         ? input.countries
         : this._config.countries,
       cities: input.cities?.length ? input.cities : this._config.cities,
       categories: this._config.categories,
       query: input.query,
-      limit,
-      includeInvalidSamples: true,
+      limit: pageSize * Math.max(page, this._config.maxPages),
+      includeInvalidSamples: options?.includeInvalidSamples ?? false,
     });
 
+    // MVP: only serve page 1. Tokens/hasMore prepare multi-page later.
+    const start = 0;
+    const results = all.slice(start, start + limit);
+    const hasMore = all.length > results.length;
+    const nextPageToken = hasMore ? `mock-page-${page + 1}` : null;
+
     return {
-      status: "MOCK",
+      status: results.length > 0 ? "MOCK" : "ZERO_RESULTS",
       query: input.query,
       results,
-      nextPageToken: results.length >= limit ? "mock-page-2" : null,
+      currentPage: page,
+      nextPageToken,
+      hasMore,
     };
   }
 

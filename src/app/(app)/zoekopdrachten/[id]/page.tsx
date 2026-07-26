@@ -14,12 +14,14 @@ import {
 } from "@/components/ui/card";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 import { getSearchQuery } from "@/lib/searches/queries";
+import { buildSearchQueryPreview } from "@/lib/searches/preview";
 import {
   formatCountryList,
   formatIndustryList,
   formatLanguageList,
 } from "@/lib/international/display";
 import { formatSourceList } from "@/lib/international/sources";
+import { Badge } from "@/components/ui/badge";
 
 type SearchDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -53,6 +55,22 @@ export default async function ZoekopdrachtDetailPage({
     notFound();
   }
 
+  const preview = buildSearchQueryPreview({
+    name: item.name,
+    searchPrompt: item.search_prompt ?? "",
+    countries: item.countries ?? [],
+    regions: item.regions ?? [],
+    cities: item.cities ?? [],
+    languages: item.languages ?? [],
+    industries: item.industries ?? [],
+    sources: item.sources ?? [],
+    keywords: item.keywords ?? [],
+    companySize: item.company_size ?? "",
+    websiteRequired: item.website_required,
+    linkedinRequired: item.linkedin_required,
+    status: item.status,
+  });
+
   return (
     <div>
       <PageHeader
@@ -75,6 +93,37 @@ export default async function ZoekopdrachtDetailPage({
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="shadow-none lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Zoekopdracht-preview</CardTitle>
+            <CardDescription>
+              Samenvatting van alle actieve criteria.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <pre className="whitespace-pre-wrap rounded-lg border border-border bg-muted/40 p-3 font-sans text-sm leading-relaxed">
+              {preview}
+            </pre>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {(item.countries ?? []).map((code) => (
+                <Badge key={`c-${code}`} variant="secondary">
+                  {formatCountryList([code])}
+                </Badge>
+              ))}
+              {(item.keywords ?? []).slice(0, 8).map((keyword) => (
+                <Badge key={`k-${keyword}`} variant="outline">
+                  {keyword}
+                </Badge>
+              ))}
+              {(item.sources ?? []).map((code) => (
+                <Badge key={`s-${code}`} variant="outline">
+                  {formatSourceList([code])}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Basisgegevens</CardTitle>
@@ -112,38 +161,38 @@ export default async function ZoekopdrachtDetailPage({
           <CardHeader>
             <CardTitle className="text-base">Filters</CardTitle>
             <CardDescription>
-              Countries, regions, languages, industries and keywords.
+              Locatie, talen, branches, bronnen en keywords.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>
-              <p className="mb-1 text-muted-foreground">Search prompt</p>
+              <p className="mb-1 text-muted-foreground">AI Search Prompt</p>
               <p className="whitespace-pre-wrap">
                 {item.search_prompt?.trim() ? item.search_prompt : "—"}
               </p>
             </div>
             <div>
-              <p className="mb-1 text-muted-foreground">Countries</p>
+              <p className="mb-1 text-muted-foreground">Landen</p>
               <p>{formatCountryList(item.countries ?? [])}</p>
             </div>
             <div>
-              <p className="mb-1 text-muted-foreground">Regions</p>
+              <p className="mb-1 text-muted-foreground">Regio&apos;s</p>
               <p>{(item.regions ?? []).join(", ") || "—"}</p>
             </div>
             <div>
-              <p className="mb-1 text-muted-foreground">Cities</p>
+              <p className="mb-1 text-muted-foreground">Steden</p>
               <p>{(item.cities ?? []).join(", ") || "—"}</p>
             </div>
             <div>
-              <p className="mb-1 text-muted-foreground">Languages</p>
+              <p className="mb-1 text-muted-foreground">Talen</p>
               <p>{formatLanguageList(item.languages ?? [])}</p>
             </div>
             <div>
-              <p className="mb-1 text-muted-foreground">Industries</p>
+              <p className="mb-1 text-muted-foreground">Branches</p>
               <p>{formatIndustryList(item.industries ?? [])}</p>
             </div>
             <div>
-              <p className="mb-1 text-muted-foreground">Sources</p>
+              <p className="mb-1 text-muted-foreground">Databronnen</p>
               <p>{formatSourceList(item.sources ?? [])}</p>
             </div>
             <div>

@@ -10,15 +10,20 @@ export type SourceRecord = {
  * Stored as codes in search_queries.sources.
  */
 export const SOURCES: SourceRecord[] = [
-  { code: "company_website", labelEn: "Company Website" },
+  { code: "google_search", labelEn: "Google" },
+  { code: "google_maps", labelEn: "Google Maps" },
   { code: "google_business_profile", labelEn: "Google Business Profile" },
+  { code: "company_website", labelEn: "Company Websites" },
   { code: "linkedin", labelEn: "LinkedIn" },
   { code: "facebook", labelEn: "Facebook" },
   { code: "instagram", labelEn: "Instagram" },
-  { code: "yellow_pages", labelEn: "Yellow Pages" },
   { code: "yelp", labelEn: "Yelp" },
+  { code: "gouden_gids", labelEn: "Gouden Gids" },
+  { code: "yellow_pages", labelEn: "Yellow Pages" },
   { code: "bing_places", labelEn: "Bing Places" },
   { code: "openstreetmap", labelEn: "OpenStreetMap" },
+  { code: "tiktok", labelEn: "TikTok" },
+  { code: "directories", labelEn: "Business directories" },
   { code: "other", labelEn: "Other / future connectors" },
 ];
 

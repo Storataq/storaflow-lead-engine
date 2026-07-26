@@ -53,7 +53,7 @@ export default function ZoekopdrachtenPage() {
     <div>
       <PageHeader
         title="Zoekopdrachten"
-        description="Beheer al je opgeslagen zoekcriteria."
+        description="Beheer wereldwijde zoekcriteria: landen, talen, bronnen, keywords en AI-prompts."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Zoekopdrachten" },

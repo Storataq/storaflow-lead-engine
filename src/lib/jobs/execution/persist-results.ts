@@ -1,6 +1,6 @@
 /**
- * Persists NormalizedBusinessResult rows into companies / company_sources /
- * scrape_results with org-scoped deduplication.
+ * Persists NormalizedBusinessResult rows into companies / contacts /
+ * company_sources / scrape_results with org-scoped deduplication.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -10,6 +10,7 @@ import {
   normalizeDomain,
 } from "@/lib/scraping/connectors/pipeline/normalizer";
 import type { NormalizedBusinessResult } from "@/lib/scraping/connectors/types";
+import type { ContactType } from "@/types/database";
 import type { Database, Json } from "@/types/supabase";
 
 type Client = SupabaseClient<Database>;
@@ -19,6 +20,7 @@ export type PersistPipelineResultsInput = {
   jobId: string;
   sourceCode: string;
   results: NormalizedBusinessResult[];
+  mode?: "mock" | "live";
 };
 
 export type PersistPipelineResultsOutcome = {
@@ -26,11 +28,16 @@ export type PersistPipelineResultsOutcome = {
   companiesReused: number;
   resultsInserted: number;
   contactsFound: number;
+  contactsCreated: number;
   skippedDuplicates: number;
 };
 
 function asJson(value: Record<string, unknown>): Json {
   return value as Json;
+}
+
+function normalizePhoneKey(phone: string): string {
+  return phone.replace(/[^\d+]/g, "");
 }
 
 async function findCompanyByDomain(
@@ -46,6 +53,26 @@ async function findCompanyByDomain(
     .limit(1)
     .maybeSingle();
   return data?.id ?? null;
+}
+
+async function findCompanyByPhone(
+  supabase: Client,
+  organizationId: string,
+  phone: string,
+): Promise<string | null> {
+  const key = normalizePhoneKey(phone);
+  if (key.length < 6) return null;
+  const { data } = await supabase
+    .from("companies")
+    .select("id, phone")
+    .eq("organization_id", organizationId)
+    .not("phone", "is", null)
+    .limit(50);
+  if (!data?.length) return null;
+  const match = data.find(
+    (row) => row.phone && normalizePhoneKey(row.phone) === key,
+  );
+  return match?.id ?? null;
 }
 
 async function findCompanyByNameCityCountry(
@@ -103,21 +130,67 @@ async function findExistingResultForSourceId(
   });
 }
 
+async function upsertContact(
+  supabase: Client,
+  input: {
+    organizationId: string;
+    companyId: string;
+    type: ContactType;
+    value: string;
+    sourceUrl: string | null;
+  },
+): Promise<boolean> {
+  const normalized =
+    input.type === "email"
+      ? input.value.trim().toLowerCase()
+      : normalizePhoneKey(input.value);
+  if (!normalized) return false;
+
+  const { data: existing } = await supabase
+    .from("contacts")
+    .select("id")
+    .eq("organization_id", input.organizationId)
+    .eq("contact_type", input.type)
+    .eq("normalized_value", normalized)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) return false;
+
+  const { error } = await supabase.from("contacts").insert({
+    organization_id: input.organizationId,
+    company_id: input.companyId,
+    contact_type: input.type,
+    contact_value: input.value.trim(),
+    normalized_value: normalized,
+    label: input.type === "email" ? "Business email" : "Business phone",
+    is_public_business_contact: true,
+    verification_status: "unknown",
+    source_url: input.sourceUrl,
+    last_checked_at: new Date().toISOString(),
+  });
+
+  return !error;
+}
+
 /**
- * Upserts companies and scrape_results for one mock pipeline run.
+ * Upserts companies, contacts and scrape_results for one pipeline run.
  * Dedup keys:
- * 1. organization + source + sourceId (within job)
+ * 1. organization + job + sourceId (within job)
  * 2. normalized domain
- * 3. normalized name + city + country
+ * 3. phone
+ * 4. normalized name + city + country
  */
 export async function persistPipelineResults(
   supabase: Client,
   input: PersistPipelineResultsInput,
 ): Promise<PersistPipelineResultsOutcome> {
+  const mode = input.mode ?? "mock";
   let companiesCreated = 0;
   let companiesReused = 0;
   let resultsInserted = 0;
   let contactsFound = 0;
+  let contactsCreated = 0;
   let skippedDuplicates = 0;
 
   for (const item of input.results) {
@@ -135,6 +208,11 @@ export async function persistPipelineResults(
 
     const domain = normalizeDomain(item.website);
     const normalizedName = normalizeCompanyName(item.name);
+    const sourceUrl =
+      typeof item.rawData.sourceUrl === "string"
+        ? item.rawData.sourceUrl
+        : `https://source.storaflow.local/${input.sourceCode}/${item.sourceId}`;
+
     let companyId: string | null = null;
 
     if (domain) {
@@ -142,6 +220,14 @@ export async function persistPipelineResults(
         supabase,
         input.organizationId,
         domain,
+      );
+    }
+
+    if (!companyId && item.phones[0]) {
+      companyId = await findCompanyByPhone(
+        supabase,
+        input.organizationId,
+        item.phones[0],
       );
     }
 
@@ -155,8 +241,10 @@ export async function persistPipelineResults(
       );
     }
 
+    let reused = false;
     if (companyId) {
       companiesReused += 1;
+      reused = true;
     } else {
       const { data: company, error: companyError } = await supabase
         .from("companies")
@@ -171,14 +259,13 @@ export async function persistPipelineResults(
           city: item.city,
           region: item.region,
           country: item.countryCode,
-          source_url:
-            typeof item.rawData.sourceUrl === "string"
-              ? item.rawData.sourceUrl
-              : `https://mock.lead-engine.local/${input.sourceCode}/${item.sourceId}`,
+          postal_code: item.postalCode,
+          phone: item.phones[0] ?? null,
+          source_url: sourceUrl,
           source_type: "search_result",
           last_checked_at: new Date().toISOString(),
           status: "new",
-          notes: `Mock pipeline result (${input.sourceCode}/${item.sourceId})`,
+          notes: `${mode === "live" ? "Live" : "Mock"} pipeline (${input.sourceCode}/${item.sourceId})`,
         })
         .select("id")
         .single();
@@ -197,20 +284,47 @@ export async function persistPipelineResults(
       organization_id: input.organizationId,
       company_id: companyId,
       scrape_job_id: input.jobId,
-      source_url:
-        typeof item.rawData.sourceUrl === "string"
-          ? item.rawData.sourceUrl
-          : `https://mock.lead-engine.local/${input.sourceCode}/${item.sourceId}`,
+      source_url: sourceUrl,
       source_type: "search_result",
       metadata_json: asJson({
-        mock: true,
+        mock: mode === "mock",
+        live: mode === "live",
+        duplicate: reused,
         source: item.source,
         sourceId: item.sourceId,
         confidence: item.confidence,
         emails: item.emails,
         phones: item.phones,
+        street: item.street,
+        postalCode: item.postalCode,
+        latitude: item.latitude,
+        longitude: item.longitude,
       }),
     });
+
+    for (const email of item.emails) {
+      contactsFound += 1;
+      const created = await upsertContact(supabase, {
+        organizationId: input.organizationId,
+        companyId,
+        type: "email",
+        value: email,
+        sourceUrl,
+      });
+      if (created) contactsCreated += 1;
+    }
+
+    for (const phone of item.phones) {
+      contactsFound += 1;
+      const created = await upsertContact(supabase, {
+        organizationId: input.organizationId,
+        companyId,
+        type: "phone",
+        value: phone,
+        sourceUrl,
+      });
+      if (created) contactsCreated += 1;
+    }
 
     await supabase.from("scrape_results").insert({
       organization_id: input.organizationId,
@@ -225,7 +339,8 @@ export async function persistPipelineResults(
       company_id: companyId,
       status: "deduplicated",
       raw_payload: asJson({
-        mock: true,
+        mock: mode === "mock",
+        live: mode === "live",
         sourceId: item.sourceId,
         source: item.source,
         emails: item.emails,
@@ -241,7 +356,6 @@ export async function persistPipelineResults(
     });
 
     resultsInserted += 1;
-    contactsFound += item.emails.length + item.phones.length;
   }
 
   return {
@@ -249,6 +363,7 @@ export async function persistPipelineResults(
     companiesReused,
     resultsInserted,
     contactsFound,
+    contactsCreated,
     skippedDuplicates,
   };
 }

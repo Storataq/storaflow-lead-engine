@@ -1,4 +1,5 @@
 import type { CrmDealStatus, CrmLeadStatus, CrmTaskPriority, CrmTaskStatus } from "@/types/database";
+import { formatCurrency } from "@/lib/ui/format";
 
 export const DEFAULT_PIPELINE_DEFS = [
   {
@@ -97,9 +98,5 @@ export function slugifyCrmName(value: string): string {
 }
 
 export function formatDealValue(value: number, currency = "EUR"): string {
-  return new Intl.NumberFormat("nl-NL", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
+  return formatCurrency(value, currency, { fallback: "€ 0" });
 }

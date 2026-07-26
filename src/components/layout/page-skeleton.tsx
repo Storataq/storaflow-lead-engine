@@ -4,7 +4,7 @@ type PageSkeletonProps = {
   /** Number of filter/control placeholders above the main block */
   filters?: number;
   /** Show a table-like block instead of a single card */
-  variant?: "table" | "cards" | "detail";
+  variant?: "table" | "cards" | "detail" | "dashboard";
 };
 
 export function PageSkeleton({
@@ -44,6 +44,21 @@ export function PageSkeleton({
             <Skeleton className="h-48 w-full rounded-xl" />
             <Skeleton className="h-48 w-full rounded-xl" />
           </div>
+        </div>
+      ) : null}
+
+      {variant === "dashboard" ? (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <Skeleton key={index} className="h-24 w-full rounded-xl" />
+            ))}
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Skeleton className="h-56 w-full rounded-xl" />
+            <Skeleton className="h-56 w-full rounded-xl" />
+          </div>
+          <Skeleton className="h-40 w-full rounded-xl" />
         </div>
       ) : null}
     </div>

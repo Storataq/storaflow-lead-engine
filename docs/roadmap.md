@@ -1,35 +1,62 @@
-# Roadmap
+# Storaflow Roadmap
 
-## Klaar (pilot + CRM foundation)
+Canonical roadmap for Foundation and post-foundation phases.
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [RELEASE-v0.1-FOUNDATION.md](./RELEASE-v0.1-FOUNDATION.md).
 
-- Fundament: Next.js, Supabase Auth/orgs, RLS, app-shell
-- Zoekopdrachten (CRUD, preview, bronnen)
-- Scrape jobs + mock executor + persistente resultaten
+## Done — v0.1 Foundation (Phase 20 / 20A)
+
+- Auth, orgs, RLS, app shell
+- Search queries + mock scrape jobs + queue UX
 - Connector framework (mock + Google Maps MVP mock)
-- Bedrijven- en contactoverzicht uit opgeslagen scrape-data
-- UI-polish: loading/empty/error states, toasts, responsive tabellen
-- CRM & funnel: pipelines, stages, leads Kanban, deals, tasks, notes
+- Companies, contacts
+- Full CRM: leads, pipeline(s), funnels, deals, tasks, notes, lead workspace
+- Company Intelligence, Sources, Enrichment
+- Lead Qualification, Opportunity Insights + NBA
+- Executive CRM Dashboard & funnel analytics
+- Production readiness: loading/empty/error, a11y, display helpers, docs
 
-## Fase 12+ — CRM automation (nog niet gestart)
+## Phase 20B — Live Scraper Engine (delivered)
 
-- E-mailverzending / campagnes
-- AI follow-ups
-- Automatische scraper → lead conversie
+- Scraper Engine: start / stop / retry / cancel / resume
+- JobExecutor → connector → normalize → validate → dedupe → persist
+- Live connector: OpenStreetMap Nominatim (HTTP, rate-limited, no API key)
+- Mock + Google Maps mock preserved
+- Contacts upserted from emails/phones when present
+- Search detail scrape-status panel; in-process worker helper
+- **Still later:** dedicated long-running worker process, CAPTCHA, private networks
 
-- Echte Google Maps / Places (geen browser automation in deze fase)
-- Rate limiting, retries, veilige defaults
-- Geen CAPTCHA-omzeiling, geen private data
+## Phase 20C — Contact and Email Discovery (delivered)
 
-## Latere kwaliteit & export
+- Website / public-page contact extraction (HTTP/HTML crawler)
+- Email finder + syntax/MX signals + confidence (mailbox = not checked)
+- Phone / social / people discovery with dedupe
+- Jobs reuse `scrape_jobs` (`website_crawl`) + existing queue advance path
+- Company enrichment panel, results page, enrichment dashboard + controlled bulk
+- Opportunity/qualification consume contactability via existing fields + soft signals
+- Docs: [CONTACT-DISCOVERY.md](./CONTACT-DISCOVERY.md)
+- **No outbound email**
 
-- Website crawler + contactextractie
-- Normalisatie / deduplicatie-review UI
-- Uitsluitlijst-handhaving
-- CSV/Excel export
+## Phase 20D — Funnel Activation (delivered)
 
-## Later — Storaflow SaaS
+- Funnel Activation Orchestrator (idempotent)
+- Company/contact eligibility + exclusion respect
+- Lead create/reuse, qualification + opportunity engines reused
+- Pipeline stage ceiling at outreach-ready
+- Task automation with dedupe
+- Campaign Readiness + approval queue
+- Routes: `/crm/funnel-activation`, `/crm/campaign-ready`
+- Docs: [FUNNEL-ACTIVATION.md](./FUNNEL-ACTIVATION.md)
+- **No outbound email**
 
-- Publieke registratie, abonnementen, Stripe
-- Teams / RBAC
-- Lead scoring, campagnes, API, webhooks
-- White Label
+## Automated Email Engine (later)
+
+Concepts prepared in `src/lib/email/future-engine.ts`:
+
+Campaign, Sequence, Template, Recipient, Personalization, Email Queue,
+Scheduled Send, Delivery, Bounce, Reply, Unsubscribe, Stop on Reply, Analytics.
+
+Requires explicit user action to send; exclusions always apply.
+
+## SaaS later
+
+Registration, billing, teams/RBAC, public API, webhooks, white label.

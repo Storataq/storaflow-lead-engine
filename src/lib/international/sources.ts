@@ -14,7 +14,7 @@ export const SOURCES: SourceRecord[] = [
   { code: "google_maps", labelEn: "Google Maps" },
   { code: "google_search", labelEn: "Google Search" },
   { code: "google_business_profile", labelEn: "Google Business Profile" },
-  { code: "openstreetmap", labelEn: "OpenStreetMap" },
+  { code: "openstreetmap", labelEn: "OpenStreetMap (Live)" },
   { code: "bing", labelEn: "Bing" },
   { code: "bing_places", labelEn: "Bing Places" },
   { code: "linkedin", labelEn: "LinkedIn" },

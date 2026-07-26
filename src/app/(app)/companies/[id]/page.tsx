@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ConvertCompanyToLeadButton } from "@/components/crm/convert-company-to-lead-button";
+import { FunnelActivationPanel } from "@/components/crm/funnel-activation-panel";
+import { WebsiteEnrichmentPanel } from "@/components/companies/website-enrichment-panel";
 import { TruncatedText } from "@/components/layout/truncated-text";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +20,12 @@ import {
   getCompany,
   listCompanySources,
 } from "@/lib/companies/queries";
+import {
+  getCampaignReadinessForLead,
+  getLatestActivationForCompany,
+} from "@/lib/crm/funnel-activation/queries";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
+import { createClient } from "@/lib/supabase/server";
 
 type CompanyDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -71,6 +78,101 @@ export default async function CompanyDetailPage({
     company.id,
   ).catch(() => []);
 
+  const enrichmentSource = [...sources]
+    .reverse()
+    .find((source) => {
+      const meta = source.metadata_json;
+      return (
+        meta &&
+        typeof meta === "object" &&
+        !Array.isArray(meta) &&
+        (meta as Record<string, unknown>).enrichment === true
+      );
+    });
+
+  const enrichmentMeta =
+    enrichmentSource?.metadata_json &&
+    typeof enrichmentSource.metadata_json === "object" &&
+    !Array.isArray(enrichmentSource.metadata_json)
+      ? (enrichmentSource.metadata_json as Record<string, unknown>)
+      : {};
+
+  let lastStatus: string | null = null;
+  if (enrichmentSource?.scrape_job_id) {
+    const supabase = await createClient();
+    const { data: job } = await supabase
+      .from("scrape_jobs")
+      .select("status, completed_at")
+      .eq("organization_id", context.organization.id)
+      .eq("id", enrichmentSource.scrape_job_id)
+      .maybeSingle();
+    lastStatus = job?.status ?? null;
+  }
+
+  const enrichmentSummary = {
+    lastJobId: enrichmentSource?.scrape_job_id ?? null,
+    lastStatus,
+    lastCompletedAt: enrichmentSource?.discovered_at ?? null,
+    emailsFound: Number(enrichmentMeta.emails ?? 0),
+    phonesFound: Number(enrichmentMeta.phones ?? 0),
+    pagesProcessed: Number(enrichmentMeta.pages ?? 0),
+    contactPage:
+      typeof enrichmentMeta.contactPage === "string"
+        ? enrichmentMeta.contactPage
+        : null,
+    aboutPage:
+      typeof enrichmentMeta.aboutPage === "string"
+        ? enrichmentMeta.aboutPage
+        : null,
+    teamPage:
+      typeof enrichmentMeta.teamPage === "string"
+        ? enrichmentMeta.teamPage
+        : null,
+    availability:
+      typeof enrichmentMeta.availability === "string"
+        ? enrichmentMeta.availability
+        : null,
+    websiteUrl: company.website_url,
+  };
+
+  const activationRun = await getLatestActivationForCompany(
+    context.organization.id,
+    company.id,
+  ).catch(() => null);
+
+  const activationSummaryRaw =
+    activationRun?.result_summary &&
+    typeof activationRun.result_summary === "object" &&
+    !Array.isArray(activationRun.result_summary)
+      ? (activationRun.result_summary as Record<string, unknown>)
+      : {};
+
+  const readinessForLead = activationRun?.lead_id
+    ? await getCampaignReadinessForLead(
+        context.organization.id,
+        activationRun.lead_id,
+      ).catch(() => null)
+    : null;
+
+  const funnelSummary = {
+    runId: activationRun?.id ?? null,
+    status: activationRun?.status ?? null,
+    leadId: activationRun?.lead_id ?? null,
+    campaignStatus: readinessForLead?.status ?? null,
+    salesPriority: readinessForLead?.sales_priority ?? null,
+    preferredEmail: readinessForLead?.preferred_email ?? null,
+    qualificationScore:
+      typeof activationSummaryRaw.qualificationScore === "number"
+        ? activationSummaryRaw.qualificationScore
+        : readinessForLead?.qualification_score ?? null,
+    opportunityScore:
+      typeof activationSummaryRaw.opportunityScore === "number"
+        ? activationSummaryRaw.opportunityScore
+        : readinessForLead?.opportunity_score ?? null,
+    lastActivatedAt: activationRun?.completed_at ?? activationRun?.created_at ?? null,
+    warnings: [],
+  };
+
   const websiteHref = safeExternalHref(company.website_url);
   const linkedinHref = safeExternalHref(company.linkedin_url);
 
@@ -78,7 +180,7 @@ export default async function CompanyDetailPage({
     <div>
       <PageHeader
         title={company.company_name}
-        description="Bedrijfsgegevens uit mock scrapes. Contactverrijking volgt in een latere fase."
+        description="Bedrijfsprofiel, website enrichment en funnel activation."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Bedrijven", href: "/companies" },
@@ -97,6 +199,18 @@ export default async function CompanyDetailPage({
           </div>
         }
       />
+
+      <div className="mb-4 space-y-4">
+        <WebsiteEnrichmentPanel
+          companyId={company.id}
+          websiteUrl={company.website_url}
+          summary={enrichmentSummary}
+        />
+        <FunnelActivationPanel
+          companyId={company.id}
+          summary={funnelSummary}
+        />
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="shadow-none">

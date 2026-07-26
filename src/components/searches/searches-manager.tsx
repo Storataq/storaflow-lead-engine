@@ -369,7 +369,7 @@ export function SearchesManager({
                             }}
                           >
                             <Play className="size-4" />
-                            Start mock scrape
+                            Start scrape
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => openEdit(item)}>
                             <Pencil className="size-4" />
@@ -417,6 +417,7 @@ export function SearchesManager({
                       render={<Button variant="ghost" size="icon-sm" />}
                     >
                       <MoreHorizontal className="size-4" />
+                      <span className="sr-only">Acties</span>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
@@ -424,7 +425,7 @@ export function SearchesManager({
                           void handleStartScrape(item);
                         }}
                       >
-                        Start mock scrape
+                        Start scrape
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEdit(item)}>
                         Bewerken

@@ -145,14 +145,14 @@ export async function startScrapeAction(
     revalidateJobPaths(queued.job.id, searchQueryId);
     return {
       success: true,
-      message: `Mock scrape gestart (${sourceCode}).`,
+      message: `Scrape gestart (${sourceCode}).`,
       jobId: queued.job.id,
       status: "queued",
     };
   } catch (error) {
     return {
       success: false,
-      message: toUserFacingError(error, "Kon mock scrape niet starten."),
+      message: toUserFacingError(error, "Kon scrape niet starten."),
     };
   }
 }
@@ -384,6 +384,27 @@ export async function advanceMockScrapeAction(
     };
   }
   if (!job) return { success: false, message: "Taak niet gevonden." };
+
+  if (job.job_type === "website_crawl") {
+    const { executeWebsiteEnrichmentJob } = await import(
+      "@/lib/enrichment/jobs"
+    );
+    const result = await executeWebsiteEnrichmentJob(
+      supabase,
+      orgId,
+      job,
+      context.membership.user_id,
+    );
+    revalidateJobPaths(jobId, null);
+    revalidatePath(`/companies`);
+    return {
+      success: result.success,
+      message: result.message,
+      jobId: result.jobId,
+      done: result.done,
+      status: result.done ? (result.success ? "completed" : "failed") : "active",
+    };
+  }
 
   let searchQuery = null;
   if (job.search_query_id) {

@@ -60,27 +60,35 @@ export function AppSidebar({ organizationName }: AppSidebarProps) {
               <button
                 type="button"
                 className={cn(
-                  "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
+                  "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   active
                     ? "bg-sidebar-accent/70 font-medium text-sidebar-accent-foreground"
                     : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground",
                 )}
                 aria-expanded={open}
+                aria-controls={
+                  item.href === "/crm" ? "crm-nav-children" : undefined
+                }
                 onClick={() => {
                   if (item.href === "/crm") setCrmOpen((value) => !value);
                 }}
               >
-                <Icon className="size-4 shrink-0" />
+                <Icon className="size-4 shrink-0" aria-hidden />
                 <span className="flex-1 text-left">{item.label}</span>
                 <ChevronDown
                   className={cn(
                     "size-4 shrink-0 transition-transform",
                     open && "rotate-180",
                   )}
+                  aria-hidden
                 />
               </button>
-              {open
-                ? item.children?.map((child) => {
+              {open ? (
+                <div
+                  id={item.href === "/crm" ? "crm-nav-children" : undefined}
+                  className="space-y-1"
+                >
+                  {item.children?.map((child) => {
                     const ChildIcon = navIconMap[child.icon as NavIconName];
                     const childActive =
                       child.href === item.href
@@ -91,19 +99,21 @@ export function AppSidebar({ organizationName }: AppSidebarProps) {
                       <Link
                         key={`${child.href}-${child.label}`}
                         href={child.href}
+                        aria-current={childActive ? "page" : undefined}
                         className={cn(
-                          "ml-3 flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors",
+                          "ml-3 flex min-h-9 items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                           childActive
                             ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
                             : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground",
                         )}
                       >
-                        <ChildIcon className="size-3.5 shrink-0" />
+                        <ChildIcon className="size-3.5 shrink-0" aria-hidden />
                         {child.label}
                       </Link>
                     );
-                  })
-                : null}
+                  })}
+                </div>
+              ) : null}
             </div>
           );
         })}

@@ -105,6 +105,11 @@ function buildScore(
   const onlinePresence = hasText(lead.website)
     ? 75 + (seed % 20)
     : 15 + (seed % 20);
+  // Website enrichment improves contactability when email/phone were discovered
+  const enrichmentBoost =
+    (hasText(lead.email) ? 10 : 0) +
+    (hasText(lead.phone) ? 8 : 0) +
+    (hasText(lead.website) ? 5 : 0);
 
   const items: Omit<OpportunityScoreBreakdownItem, "weightedContribution">[] = [
     {
@@ -125,8 +130,9 @@ function buildScore(
       key: "contactability",
       label: "Contactability",
       weight: 0.1,
-      rawScore: contactability,
-      explanation: "E-mail, telefoon en contactpersoon",
+      rawScore: clamp(contactability + enrichmentBoost),
+      explanation:
+        "E-mail, telefoon, contactpersoon (+ website enrichment signals)",
     },
     {
       key: "website",
@@ -696,6 +702,15 @@ function buildReadiness(lead: CrmLeadWithRelations): OutreachReadiness {
       key: "website",
       label: "Website available",
       complete: hasText(lead.website),
+      required: false,
+    },
+    {
+      key: "website_enrichment",
+      label: "Website contact discovery signals",
+      complete:
+        hasText(lead.email) ||
+        hasText(lead.phone) ||
+        (hasText(lead.website) && hasText(lead.notes)),
       required: false,
     },
     {

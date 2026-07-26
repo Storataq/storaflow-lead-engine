@@ -12,7 +12,10 @@ type CrmSubnavProps = {
 
 export function CrmSubnav({ currentPath }: CrmSubnavProps) {
   return (
-    <div className="sticky top-14 z-10 mb-6 -mx-1 flex gap-2 overflow-x-auto bg-background/95 px-1 py-2 backdrop-blur supports-backdrop-filter:bg-background/80">
+    <nav
+      aria-label="CRM-navigatie"
+      className="sticky top-14 z-10 mb-6 -mx-1 flex gap-2 overflow-x-auto bg-background/95 px-1 py-2 backdrop-blur supports-backdrop-filter:bg-background/80"
+    >
       {crmChildren.map((item) => {
         const active =
           item.href === "/crm"
@@ -23,8 +26,9 @@ export function CrmSubnav({ currentPath }: CrmSubnavProps) {
           <Link
             key={item.href}
             href={item.href}
+            aria-current={active ? "page" : undefined}
             className={cn(
-              "shrink-0 rounded-lg border px-3 py-1.5 text-sm transition-colors",
+              "min-h-9 shrink-0 rounded-lg border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               active
                 ? "border-foreground/20 bg-muted font-medium text-foreground"
                 : "border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground",
@@ -34,6 +38,6 @@ export function CrmSubnav({ currentPath }: CrmSubnavProps) {
           </Link>
         );
       })}
-    </div>
+    </nav>
   );
 }

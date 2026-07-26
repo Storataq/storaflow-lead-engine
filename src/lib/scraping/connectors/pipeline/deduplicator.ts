@@ -54,11 +54,26 @@ function nameCityKey(item: NormalizedBusinessResult): string | null {
   return `name-city|${name}|${city}`;
 }
 
+function phoneKey(item: NormalizedBusinessResult): string | null {
+  const phone = item.phones[0]?.replace(/[^\d+]/g, "") ?? "";
+  if (phone.length < 6) return null;
+  return `phone|${phone}`;
+}
+
+function coordsKey(item: NormalizedBusinessResult): string | null {
+  if (item.latitude == null || item.longitude == null) return null;
+  const lat = item.latitude.toFixed(3);
+  const lon = item.longitude.toFixed(3);
+  return `coords|${lat}|${lon}`;
+}
+
 /**
  * Removes duplicates by:
  * 1. source + sourceId
  * 2. normalized domain
- * 3. normalized company name + city
+ * 3. phone
+ * 4. coordinates (~100m grid)
+ * 5. normalized company name + city
  */
 export function deduplicateBusinessResults(
   items: NormalizedBusinessResult[],
@@ -72,6 +87,8 @@ export function deduplicateBusinessResults(
     const keys = [
       sourceKey(item),
       domainKey(item),
+      phoneKey(item),
+      coordsKey(item),
       nameCityKey(item),
     ].filter((key): key is string => Boolean(key));
 

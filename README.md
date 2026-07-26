@@ -1,22 +1,27 @@
 # Lead Engine (Storaflow)
 
-Interne webapp om publieke zakelijke bedrijfs- en contactgegevens te verzamelen op basis van branche, zoekterm, plaats, regio en land.
+Interne webapp om publieke zakelijke bedrijfs- en contactgegevens te verzamelen op basis van branche, zoekterm, plaats, regio en land — en die leads te beheren in een volledig CRM.
 
 Branding in code blijft voorlopig generiek (`Lead Engine`). De productlijn richting commerciële SaaS heet **Storaflow**.
 
-## Huidige status (pilot-ready)
+## Huidige status — Foundation + Live scrape + Contact discovery
 
-De pilot dekt de volledige **mock lead-flow** end-to-end:
+Phase 20A foundation, **20B live scraper** (OpenStreetMap Nominatim), and **20C website contact discovery** are in tree:
 
 1. Organisatie + login (Supabase Auth)
-2. Zoekopdrachten aanmaken/bewerken
-3. Mock scrape starten vanuit een zoekopdracht
-4. Job queue + jobdetail met voortgang, logs en resultaten
-5. Connector Management (mock + Google Maps MVP mock)
-6. Bedrijven en contactsignalen bekijken
-7. Dashboard met actuele tellingen
+2. Zoekopdrachten → scrape jobs (mock + live OSM)
+3. Bedrijven / contactsignalen
+4. Website enrichment: crawl publieke pages → e-mail/telefoon/social discovery
+5. Funnel activation: lead → qualification → pipeline (≤ outreach-ready) → campaign ready
+6. CRM: leads, pipeline, deals, tasks, notes, funnels
+7. Qualification, Opportunity Insights, Executive Dashboard
 
-**Nog niet live:** echte Google Maps scraping, Places API, browser automation, proxies, CAPTCHA, LinkedIn, AI enrichment, CSV-export UI, uitsluitlijst-handhaving.
+**Nog niet:** Places API / Google live, browser automation, CAPTCHA bypass, mailbox probing, outbound e-mail, campagnes.
+
+Contact discovery: [docs/CONTACT-DISCOVERY.md](docs/CONTACT-DISCOVERY.md)  
+Funnel activation: [docs/FUNNEL-ACTIVATION.md](docs/FUNNEL-ACTIVATION.md)
+
+Release notes: [docs/RELEASE-v0.1-FOUNDATION.md](docs/RELEASE-v0.1-FOUNDATION.md)
 
 ## Stack
 
@@ -56,7 +61,7 @@ Voer migraties **niet** automatisch vanuit de app uit. Doe dit handmatig in volg
 
 1. `supabase/migrations/20260726000001_initial_schema.sql`
 2. `supabase/migrations/20260726000002_rls_policies.sql`
-3. latere migraties in dezelfde map (`…00003` t/m `…00007`)
+3. latere migraties in dezelfde map (`…00003` t/m recentste)
 
 ```bash
 npx supabase db push
@@ -84,12 +89,15 @@ npm run start    # Productieserver
 
 ```
 src/
-  app/(app)/           # Authenticated routes (dashboard, zoekopdrachten, jobs, …)
-  components/          # UI, layout, feature managers
+  app/(app)/           # Authenticated routes (+ loading/error)
+  components/
+    layout/            # PageHeader, EmptyState, PageSkeleton, RouteLoading, PageErrorState
+    crm/               # CRM UI (leads, pipeline, dashboards, …)
   lib/
     auth/              # Login / logout / org actions
     companies/         # Bedrijvenqueries
     contacts/          # Contactsignalen uit scrape_results
+    crm/               # CRM + qualification / opportunities / executive analytics
     international/     # Landen, talen, bronnen, branches
     jobs/              # Queue, executor, persist, actions
     organizations/     # Actieve organisatie (server-side)
@@ -100,9 +108,31 @@ src/
     ui/                # Gedeelde UI helpers (user-facing errors)
   types/               # Database / Supabase types
 supabase/migrations/   # SQL migraties
-docs/                  # Documentatie
+docs/                  # Architectuur, DB, roadmap, release notes
 worker/                # Placeholder voor latere background worker
 ```
+
+## Module guide (kort)
+
+| Module | Route / locatie | Notitie |
+|---|---|---|
+| Search | `/zoekopdrachten` | Criteria → mock scrape jobs |
+| Jobs | `/jobs` | Queue, logs, resultaten |
+| Companies | `/companies` | Persistente scrape-output |
+| CRM | `/crm/*` | Leads, pipeline, deals, tasks, notes |
+| Qualification | `/crm/qualification` | Deterministische lead scores |
+| Opportunities | `/crm/opportunities` | Opportunity + next-best-action |
+| Executive | `/crm/executive` | Funnel / pipeline / revenue analytics |
+| Connectors | `/connectors` | Manifests; live netwerk uit |
+
+Uitgebreid: [docs/architecture.md](docs/architecture.md)
+
+## UI conventions
+
+- **Loading:** route `loading.tsx` → `RouteLoading` / `PageSkeleton`
+- **Empty:** `EmptyState` met icon, titel, beschrijving, primaire (+ optionele secundaire) actie
+- **Errors:** `toUserFacingError` + `Alert` of `PageErrorState` (retry + terug)
+- **CRM nav:** sidebar children + `CrmSubnav`
 
 ## Connectorarchitectuur
 
@@ -110,6 +140,8 @@ worker/                # Placeholder voor latere background worker
 - Registry + factory kiezen de connectorcode (standaard `google_maps` voor jobs).
 - Catalogus-UI (`/connectors`) toont manifests; live netwerk is uitgeschakeld.
 - Alle huidige connectors draaien in **mock mode** — geen Places API, geen browser, geen proxies.
+
+Zie [docs/future-integrations.md](docs/future-integrations.md) voor uitbreidingspunten.
 
 ## Jobflow
 
@@ -124,7 +156,7 @@ Zoekopdracht → startScrapeAction → scrape_jobs (queued)
 
 Statuses: `draft` → `pending`/`queued` → `active`/`running` → `completed` | `failed` | `paused` | `cancelled`.
 
-## Pipeline
+## Pipeline (scrape)
 
 1. Connector levert mock business results
 2. Normalisatie van naam/domein/locatie
@@ -141,15 +173,21 @@ Statuses: `draft` → `pending`/`queued` → `active`/`running` → `completed` 
 - Service role alleen op server/worker
 - Begrijpelijke foutteksten in de UI (geen ruwe SQL/providerfouten)
 
-## Toekomstige uitbreidingen (fase 11–20+)
+## Documentatie
 
-- Echte Google Maps / Places (met strikte rate limits)
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — canonical architecture (Phase 20A)
+- [ROADMAP.md](docs/ROADMAP.md) — phases 20B–D and email engine
+- [RELEASE-v0.1-FOUNDATION.md](docs/RELEASE-v0.1-FOUNDATION.md) — foundation release notes
+- [architecture.md](docs/architecture.md) — short architecture summary
+- [Database](docs/database.md)
+- [Supabase](docs/supabase.md)
+- [Future integrations](docs/future-integrations.md)
+
+## Toekomst (na v0.1)
+
+- Echte Google Maps / Places / Search connectors
 - Website crawler + contactextractie
-- Proxies / CAPTCHA-beleid (alleen waar legaal en toegestaan)
-- LinkedIn (alleen publieke signalen, later)
-- AI enrichment
-- Uitsluitlijst-handhaving + CSV/Excel export
-- Aparte worker-claim loop
-- SaaS: registratie, billing, teams, API
-
-Zie [docs/roadmap.md](docs/roadmap.md).
+- E-mail find/validate + campagnes (expliciete send)
+- Background worker claim-loop
+- AI adapters voor summaries (server-only)
+- SaaS: registratie, billing, teams, API, webhooks

@@ -126,6 +126,16 @@ export type Database = {
           allow_personal_emails: boolean;
           email_prefix_denylist: string[];
           user_agent: string;
+          funnel_activation_mode: "manual" | "assisted" | "automatic";
+          qualification_threshold: number;
+          opportunity_threshold: number;
+          auto_deal_mode: "never" | "recommend" | "automatic";
+          auto_create_tasks: boolean;
+          allow_role_emails: boolean;
+          require_named_contact: boolean;
+          require_manual_approval: boolean;
+          skip_recent_activation_hours: number;
+          default_funnel_pipeline_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -142,6 +152,16 @@ export type Database = {
           allow_personal_emails?: boolean;
           email_prefix_denylist?: string[];
           user_agent?: string;
+          funnel_activation_mode?: "manual" | "assisted" | "automatic";
+          qualification_threshold?: number;
+          opportunity_threshold?: number;
+          auto_deal_mode?: "never" | "recommend" | "automatic";
+          auto_create_tasks?: boolean;
+          allow_role_emails?: boolean;
+          require_named_contact?: boolean;
+          require_manual_approval?: boolean;
+          skip_recent_activation_hours?: number;
+          default_funnel_pipeline_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -825,6 +845,120 @@ export type Database = {
         };
         Update: Partial<
           Database["public"]["Tables"]["crm_lead_contacts"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      funnel_activation_runs: {
+        Row: {
+          id: string;
+          organization_id: string;
+          company_id: string | null;
+          lead_id: string | null;
+          trigger_source: string;
+          status: string;
+          current_step: string | null;
+          completed_steps: string[];
+          failed_step: string | null;
+          retry_count: number;
+          warning_count: number;
+          idempotency_key: string;
+          result_summary: Json;
+          error_message: string | null;
+          started_at: string | null;
+          completed_at: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          company_id?: string | null;
+          lead_id?: string | null;
+          trigger_source?: string;
+          status?: string;
+          current_step?: string | null;
+          completed_steps?: string[];
+          failed_step?: string | null;
+          retry_count?: number;
+          warning_count?: number;
+          idempotency_key: string;
+          result_summary?: Json;
+          error_message?: string | null;
+          started_at?: string | null;
+          completed_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["funnel_activation_runs"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      campaign_readiness: {
+        Row: {
+          id: string;
+          organization_id: string;
+          lead_id: string;
+          company_id: string | null;
+          contact_id: string | null;
+          status: string;
+          approval_status: string;
+          sales_priority: string;
+          personalization_status: string;
+          preferred_email: string | null;
+          preferred_name: string | null;
+          preferred_phone: string | null;
+          contactability: string | null;
+          qualification_score: number;
+          opportunity_score: number;
+          priority_score: number;
+          reasons: string[];
+          missing_requirements: string[];
+          factors_json: Json;
+          personalization_json: Json;
+          suppression_reason: string | null;
+          activation_run_id: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          review_notes: string | null;
+          calculated_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          lead_id: string;
+          company_id?: string | null;
+          contact_id?: string | null;
+          status?: string;
+          approval_status?: string;
+          sales_priority?: string;
+          personalization_status?: string;
+          preferred_email?: string | null;
+          preferred_name?: string | null;
+          preferred_phone?: string | null;
+          contactability?: string | null;
+          qualification_score?: number;
+          opportunity_score?: number;
+          priority_score?: number;
+          reasons?: string[];
+          missing_requirements?: string[];
+          factors_json?: Json;
+          personalization_json?: Json;
+          suppression_reason?: string | null;
+          activation_run_id?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          review_notes?: string | null;
+          calculated_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["campaign_readiness"]["Insert"]
         >;
         Relationships: [];
       };

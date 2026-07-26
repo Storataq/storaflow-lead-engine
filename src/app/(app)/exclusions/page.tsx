@@ -23,8 +23,10 @@ export default function ExclusionsPage() {
         icon={Ban}
         title="Uitsluitlijst is leeg"
         description="Voeg later uitsluitingen toe om domeinen of contacten te blokkeren vóór crawlen, opslaan en exporteren."
-        actionLabel="Naar instellingen"
-        actionHref="/settings"
+        actionLabel="Naar zoekopdrachten"
+        actionHref="/zoekopdrachten"
+        secondaryActionLabel="Naar instellingen"
+        secondaryActionHref="/settings"
       />
     </div>
   );

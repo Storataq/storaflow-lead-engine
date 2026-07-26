@@ -771,23 +771,25 @@ export function LeadWorkspace({
                               type="button"
                               size="icon-sm"
                               variant="ghost"
+                              aria-label="Notitie bewerken"
                               onClick={() => {
                                 setEditingNote(note);
                                 setDialog("edit-note");
                               }}
                             >
-                              <Pencil className="size-3.5" />
+                              <Pencil className="size-3.5" aria-hidden />
                             </Button>
                             <Button
                               type="button"
                               size="icon-sm"
                               variant="ghost"
+                              aria-label="Notitie verwijderen"
                               disabled={pending}
                               onClick={() =>
                                 runAction(() => deleteNoteAction(note.id))
                               }
                             >
-                              <Trash2 className="size-3.5" />
+                              <Trash2 className="size-3.5" aria-hidden />
                             </Button>
                           </div>
                         </div>
@@ -895,23 +897,25 @@ export function LeadWorkspace({
                             type="button"
                             size="icon-sm"
                             variant="ghost"
+                            aria-label="Taak bewerken"
                             onClick={() => {
                               setEditingTask(task);
                               setDialog("edit-task");
                             }}
                           >
-                            <Pencil className="size-3.5" />
+                            <Pencil className="size-3.5" aria-hidden />
                           </Button>
                           <Button
                             type="button"
                             size="icon-sm"
                             variant="ghost"
+                            aria-label="Taak verwijderen"
                             disabled={pending}
                             onClick={() =>
                               runAction(() => deleteTaskAction(task.id))
                             }
                           >
-                            <Trash2 className="size-3.5" />
+                            <Trash2 className="size-3.5" aria-hidden />
                           </Button>
                         </div>
                       </div>
@@ -1046,17 +1050,19 @@ export function LeadWorkspace({
                             type="button"
                             size="icon-sm"
                             variant="ghost"
+                            aria-label="Contact bewerken"
                             onClick={() => {
                               setEditingContact(contact);
                               setDialog("edit-contact");
                             }}
                           >
-                            <Pencil className="size-3.5" />
+                            <Pencil className="size-3.5" aria-hidden />
                           </Button>
                           <Button
                             type="button"
                             size="icon-sm"
                             variant="ghost"
+                            aria-label="Contact verwijderen"
                             disabled={pending}
                             onClick={() =>
                               runAction(() =>
@@ -1064,7 +1070,7 @@ export function LeadWorkspace({
                               )
                             }
                           >
-                            <Trash2 className="size-3.5" />
+                            <Trash2 className="size-3.5" aria-hidden />
                           </Button>
                         </div>
                       </div>

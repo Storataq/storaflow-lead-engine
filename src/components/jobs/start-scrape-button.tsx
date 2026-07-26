@@ -62,7 +62,7 @@ export function StartScrapeButton({
       }}
     >
       <Play className="size-4" />
-      {busy || pending ? "Starten…" : "Start mock scrape"}
+      {busy || pending ? "Starten…" : "Start scrape"}
     </Button>
   );
 }

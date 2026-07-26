@@ -25,6 +25,8 @@ export default function ExportsPage() {
         description="Bouw eerst een leadlijst via zoekopdrachten en mock scrapes. Export volgt in een latere fase."
         actionLabel="Naar zoekopdrachten"
         actionHref="/zoekopdrachten"
+        secondaryActionLabel="Naar bedrijven"
+        secondaryActionHref="/companies"
       />
     </div>
   );

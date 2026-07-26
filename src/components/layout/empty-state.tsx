@@ -19,6 +19,9 @@ type EmptyStateProps = {
   actionHref?: string;
   /** Custom primary action (e.g. open a sheet). Prefer over actionHref when both set. */
   action?: ReactNode;
+  secondaryActionLabel?: string;
+  secondaryActionHref?: string;
+  secondaryAction?: ReactNode;
 };
 
 export function EmptyState({
@@ -28,6 +31,9 @@ export function EmptyState({
   actionLabel,
   actionHref,
   action,
+  secondaryActionLabel,
+  secondaryActionHref,
+  secondaryAction,
 }: EmptyStateProps) {
   const linkAction =
     !action && actionLabel && actionHref ? (
@@ -35,6 +41,20 @@ export function EmptyState({
         {actionLabel}
       </Button>
     ) : null;
+
+  const secondaryLink =
+    !secondaryAction && secondaryActionLabel && secondaryActionHref ? (
+      <Button
+        nativeButton={false}
+        variant="outline"
+        render={<Link href={secondaryActionHref} />}
+      >
+        {secondaryActionLabel}
+      </Button>
+    ) : null;
+
+  const primary = action ?? linkAction;
+  const secondary = secondaryAction ?? secondaryLink;
 
   return (
     <Card className="border-dashed shadow-none">
@@ -47,9 +67,10 @@ export function EmptyState({
           {description}
         </CardDescription>
       </CardHeader>
-      {action || linkAction ? (
-        <CardContent className="flex justify-center pb-8">
-          {action ?? linkAction}
+      {primary || secondary ? (
+        <CardContent className="flex flex-wrap justify-center gap-2 pb-8">
+          {primary}
+          {secondary}
         </CardContent>
       ) : null}
     </Card>

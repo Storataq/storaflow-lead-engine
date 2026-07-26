@@ -246,8 +246,8 @@ export function enrichmentSteps(
   return [
     {
       id: "website_scan",
-      label: "Website scan",
-      status: hasWebsite ? "completed" : "pending",
+      label: "Website scan / contact discovery",
+      status: hasWebsite && hasEmail ? "completed" : hasWebsite ? "running" : "pending",
     },
     {
       id: "business_profile",

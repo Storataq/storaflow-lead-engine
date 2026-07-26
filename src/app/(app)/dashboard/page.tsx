@@ -15,6 +15,7 @@ import Link from "next/link";
 
 import { JobStatusBadge } from "@/components/jobs/job-status-badge";
 import { SearchStatusBadge } from "@/components/searches/search-status-badge";
+import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -215,15 +216,15 @@ export default async function DashboardPage() {
         </CardHeader>
         <CardContent>
           {!crmStats || crmStats.dealsByStage.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nog geen CRM-data.{" "}
-              <Link
-                href="/crm/leads"
-                className="font-medium underline-offset-4 hover:underline"
-              >
-                Open CRM
-              </Link>
-            </p>
+            <EmptyState
+              icon={Handshake}
+              title="Nog geen CRM-pipeline"
+              description="Maak leads aan of importeer bedrijven om de pipeline-verdeling hier te zien."
+              actionLabel="Open CRM"
+              actionHref="/crm/leads"
+              secondaryActionLabel="Executive Dashboard"
+              secondaryActionHref="/crm/executive"
+            />
           ) : (
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {crmStats.dealsByStage.map((stage) => (
@@ -235,6 +236,7 @@ export default async function DashboardPage() {
                     <span
                       className="size-2.5 rounded-full"
                       style={{ backgroundColor: stage.color }}
+                      aria-hidden
                     />
                     {stage.stageName}
                   </span>
@@ -256,16 +258,13 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {recentSearches.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nog geen zoekopdrachten.{" "}
-                <Link
-                  href="/zoekopdrachten"
-                  className="font-medium text-foreground underline-offset-4 hover:underline"
-                >
-                  Maak er een aan
-                </Link>
-                .
-              </p>
+              <EmptyState
+                icon={Search}
+                title="Nog geen zoekopdrachten"
+                description="Start met een internationale zoekopdracht om bedrijven en leads te verzamelen."
+                actionLabel="Nieuwe zoekopdracht"
+                actionHref="/zoekopdrachten"
+              />
             ) : (
               <ul className="space-y-3">
                 {recentSearches.map((item) => (
@@ -306,16 +305,15 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {recentJobs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nog geen scrapingtaken.{" "}
-                <Link
-                  href="/zoekopdrachten"
-                  className="font-medium text-foreground underline-offset-4 hover:underline"
-                >
-                  Start vanaf een zoekopdracht
-                </Link>
-                .
-              </p>
+              <EmptyState
+                icon={ListTodo}
+                title="Nog geen scrapingtaken"
+                description="Start een mock scrape vanaf een zoekopdracht om jobs en resultaten te zien."
+                actionLabel="Naar zoekopdrachten"
+                actionHref="/zoekopdrachten"
+                secondaryActionLabel="Jobs"
+                secondaryActionHref="/jobs"
+              />
             ) : (
               <ul className="space-y-3">
                 {recentJobs.map((job) => (

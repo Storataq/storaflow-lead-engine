@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { CrmSubnav } from "@/components/crm/crm-subnav";
+import { LeadFunnelReadinessCard } from "@/components/crm/lead-funnel-readiness-card";
 import { LeadWorkspace } from "@/components/crm/lead-workspace";
 import { PageHeader } from "@/components/layout/page-header";
+import { getCampaignReadinessForLead } from "@/lib/crm/funnel-activation/queries";
+import { buildOpportunityRecord } from "@/lib/crm/opportunity-insights";
+import { qualifyLead } from "@/lib/crm/qualification";
 import {
   getLead,
   getLeadCompanyEnrichment,
@@ -65,11 +69,31 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
 
   const deals = allDeals.filter((deal) => deal.lead_id === id);
 
+  const readinessRow = await getCampaignReadinessForLead(orgId, id).catch(
+    () => null,
+  );
+  const qualification = qualifyLead(lead);
+  const opportunity = buildOpportunityRecord(lead, qualification);
+
+  const readiness = readinessRow
+    ? {
+        status: readinessRow.status,
+        approvalStatus: readinessRow.approval_status,
+        salesPriority: readinessRow.sales_priority,
+        preferredEmail: readinessRow.preferred_email,
+        preferredName: readinessRow.preferred_name,
+        qualificationScore: readinessRow.qualification_score,
+        opportunityScore: readinessRow.opportunity_score,
+        reasons: readinessRow.reasons ?? [],
+        missingRequirements: readinessRow.missing_requirements ?? [],
+      }
+    : null;
+
   return (
     <div>
       <PageHeader
         title={lead.company_name}
-        description="Lead workspace met Company Intelligence, timeline, notes, tasks en deals."
+        description="Lead workspace met funnel readiness, intelligence, timeline, notes, tasks en deals."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "CRM", href: "/crm" },
@@ -78,6 +102,13 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
         ]}
       />
       <CrmSubnav currentPath="/crm/leads" />
+      <div className="mb-4">
+        <LeadFunnelReadinessCard
+          leadId={lead.id}
+          readiness={readiness}
+          nextBestAction={opportunity.nextBestActions.primary.title}
+        />
+      </div>
       <LeadWorkspace
         lead={lead}
         enrichment={enrichment}

@@ -106,6 +106,27 @@ export async function getScrapeJob(
   return withSearch ?? null;
 }
 
+export async function listScrapeJobsForSearch(
+  organizationId: string,
+  searchQueryId: string,
+  limit = 10,
+): Promise<ScrapeJobWithSearch[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("scrape_jobs")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("search_query_id", searchQueryId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return attachSearchNames(organizationId, data ?? []);
+}
+
 export async function listCompaniesForJob(
   organizationId: string,
   jobId: string,

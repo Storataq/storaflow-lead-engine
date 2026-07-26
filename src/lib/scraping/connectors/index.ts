@@ -66,9 +66,27 @@ export {
   type GoogleMapsConnectorConfig,
 } from "@/lib/scraping/connectors/google-maps";
 export {
+  OpenStreetMapConnector,
+  createOpenStreetMapConnector,
+  OPENSTREETMAP_CONNECTOR_CODE,
+  OPENSTREETMAP_CAPABILITIES,
+} from "@/lib/scraping/connectors/openstreetmap";
+export {
   runConnectorPipeline,
   runConnectorPipelineDetailed,
 } from "@/lib/scraping/connectors/pipeline";
+export type {
+  ConnectorCancellation,
+  ConnectorExecutionContext,
+  ConnectorPagination,
+  ConnectorRateLimitInfo,
+  ConnectorRetryPolicy,
+  ConnectorRunStatistics,
+  LiveScraperPipelineStep,
+} from "@/lib/scraping/connectors/readiness";
+export {
+  LIVE_SCRAPER_PIPELINE_STEPS,
+} from "@/lib/scraping/connectors/readiness";
 export {
   enrichWithAiPlaceholder,
   deduplicateBusinessResults,

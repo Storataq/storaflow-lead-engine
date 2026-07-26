@@ -520,7 +520,7 @@ function SourceDetailPanel({ source }: { source: IntelligenceSourceCard }) {
                   </div>
                 </div>
                 {index < source.pipeline.length - 1 ? (
-                  <span className="sr-only">next</span>
+                  <span className="sr-only">Volgende</span>
                 ) : null}
               </li>
             ))}

@@ -126,9 +126,11 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
       <PageHeader
         title={searchName}
         description={
-          job.current_source_code === "google_maps"
-            ? "Google Maps connector MVP — persistente resultaten via de bestaande pipeline."
-            : "Connector-pipeline met persistente resultaten in de database."
+          job.current_source_code === "openstreetmap"
+            ? "Live OpenStreetMap (Nominatim) scrape via Scraper Engine."
+            : job.current_source_code === "google_maps"
+              ? "Google Maps connector MVP (mock) — persistente resultaten via de pipeline."
+              : "Scraper Engine — connector-pipeline met persistente resultaten."
         }
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
@@ -261,8 +263,18 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
               <span>{formatDate(job.completed_at)}</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-muted-foreground">Claim</span>
+              <span className="text-muted-foreground">Worker</span>
               <span>{job.claimed_by ?? "—"}</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Mode</span>
+              <span>
+                {job.current_source_code === "openstreetmap" ? "Live" : "Mock"}
+              </span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Claim</span>
+              <span>{job.claimed_at ? formatDate(job.claimed_at) : "—"}</span>
             </div>
             {job.error_message ? (
               <div className="rounded-lg border border-border bg-muted/40 p-3 text-muted-foreground">

@@ -19,8 +19,12 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Kanban } from "lucide-react";
 import { toast } from "sonner";
 
+import { EmptyState } from "@/components/layout/empty-state";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { moveLeadStageAction } from "@/lib/crm/actions";
 import { formatDealValue } from "@/lib/crm/constants";
 import type {
@@ -29,8 +33,6 @@ import type {
   CrmStageRow,
   OrgMemberOption,
 } from "@/lib/crm/queries";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 type PipelineBoardProps = {
@@ -279,6 +281,18 @@ export function PipelineBoard({
         toast.success(result.message);
       });
     });
+  }
+
+  if (pipelines.length === 0) {
+    return (
+      <EmptyState
+        icon={Kanban}
+        title="Nog geen pipeline"
+        description="Er is nog geen CRM-pipeline beschikbaar voor deze organisatie. Controleer of de CRM-migratie is uitgevoerd."
+        actionLabel="Naar leads"
+        actionHref="/crm/leads"
+      />
+    );
   }
 
   return (

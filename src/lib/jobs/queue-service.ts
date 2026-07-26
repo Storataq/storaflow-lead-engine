@@ -11,7 +11,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
-  MOCK_ENGINE_CLAIM,
   PIPELINE_PROGRESS,
   PIPELINE_STAGE_COUNT,
   computeRuntimeMs,
@@ -212,7 +211,7 @@ export async function dequeue(
     status: "active",
     started_at: next.started_at ?? now,
     claimed_at: now,
-    claimed_by: MOCK_ENGINE_CLAIM,
+    claimed_by: "scraper-engine-v1",
     last_heartbeat_at: now,
     progress_percent: Math.max(next.progress_percent, 0),
   });
@@ -221,7 +220,7 @@ export async function dequeue(
     organizationId,
     jobId: next.id,
     eventCode: "worker_assigned",
-    message: `Worker Assigned (${MOCK_ENGINE_CLAIM})`,
+    message: "Worker Assigned (scraper-engine-v1)",
     sourceCode: next.current_source_code,
   });
   await appendJobLog(supabase, {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { JobStatusBadge } from "@/components/jobs/job-status-badge";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchDetailActions } from "@/components/searches/search-detail-actions";
 import { SearchStatusBadge } from "@/components/searches/search-status-badge";
@@ -19,9 +20,13 @@ import {
   formatLanguageList,
 } from "@/lib/international/display";
 import { formatSourceList } from "@/lib/international/sources";
+import { formatRuntimeMs } from "@/lib/jobs/constants";
+import { jobLifecycleLabel, jobLifecyclePhase } from "@/lib/jobs/lifecycle";
+import { listScrapeJobsForSearch } from "@/lib/jobs/queries";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 import { buildSearchQueryPreview } from "@/lib/searches/preview";
 import { getSearchQuery } from "@/lib/searches/queries";
+import { formatDateTime } from "@/lib/ui/format";
 
 type SearchDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -32,13 +37,6 @@ export async function generateMetadata({
 }: SearchDetailPageProps): Promise<Metadata> {
   const { id } = await params;
   return { title: `Zoekopdracht ${id.slice(0, 8)}` };
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("nl-NL", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
 }
 
 export default async function ZoekopdrachtDetailPage({
@@ -55,6 +53,13 @@ export default async function ZoekopdrachtDetailPage({
     notFound();
   }
 
+  const jobs = await listScrapeJobsForSearch(
+    context.organization.id,
+    id,
+    8,
+  ).catch(() => []);
+
+  const latest = jobs[0] ?? null;
   const preview = buildSearchQueryPreview({
     name: item.name,
     searchPrompt: item.search_prompt ?? "",
@@ -75,7 +80,7 @@ export default async function ZoekopdrachtDetailPage({
     <div>
       <PageHeader
         title={item.name}
-        description="Opgeslagen zoekcriteria — start een mock-scrape om bedrijven te verzamelen."
+        description="Opgeslagen zoekcriteria — start een scrape via OpenStreetMap (live) of mock connectors."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Zoekopdrachten", href: "/zoekopdrachten" },
@@ -116,6 +121,121 @@ export default async function ZoekopdrachtDetailPage({
           </CardContent>
         </Card>
 
+        <Card className="shadow-none lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Scrape-status</CardTitle>
+            <CardDescription>
+              Voortgang van de meest recente search job voor deze zoekopdracht.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {latest ? (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-lg border border-border px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <JobStatusBadge status={latest.status} />
+                      <span className="text-xs text-muted-foreground">
+                        {jobLifecycleLabel(
+                          jobLifecyclePhase(latest.status, {
+                            hadFailure: latest.retry_count > 0,
+                          }),
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-border px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Voortgang</p>
+                    <p className="mt-1 text-lg font-semibold tabular-nums">
+                      {latest.progress_percent}%
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Connector</p>
+                    <p className="mt-1 text-sm font-medium">
+                      {latest.current_source_code ?? "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Worker</p>
+                    <p className="mt-1 text-sm font-medium">
+                      {latest.claimed_by ?? "Nog niet geclaimd"}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Verwerkt</p>
+                    <p className="font-medium">{latest.companies_found}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Contacten</p>
+                    <p className="font-medium">{latest.contacts_found}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Fouten</p>
+                    <p className="font-medium">{latest.error_count}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Runtime</p>
+                    <p className="font-medium">
+                      {formatRuntimeMs(latest.runtime_ms)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Laatste update</p>
+                    <p className="font-medium">
+                      {formatDateTime(
+                        latest.last_heartbeat_at ?? latest.updated_at,
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href={`/jobs/${latest.id}`}
+                    className="text-sm font-medium underline-offset-4 hover:underline"
+                  >
+                    Open jobdetail
+                  </Link>
+                  <Link
+                    href="/jobs"
+                    className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+                  >
+                    Alle scrapingtaken
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Nog geen scrape gestart. Gebruik “Start scrape” om een job te
+                queueen. Standaardconnector: OpenStreetMap (live Nominatim).
+              </p>
+            )}
+
+            {jobs.length > 1 ? (
+              <ul className="space-y-2 border-t border-border pt-3">
+                {jobs.slice(1).map((job) => (
+                  <li
+                    key={job.id}
+                    className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                  >
+                    <Link
+                      href={`/jobs/${job.id}`}
+                      className="font-medium hover:underline"
+                    >
+                      {formatDateTime(job.created_at)} ·{" "}
+                      {job.current_source_code ?? "connector"}
+                    </Link>
+                    <JobStatusBadge status={job.status} />
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </CardContent>
+        </Card>
+
         <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Basisgegevens</CardTitle>
@@ -128,11 +248,11 @@ export default async function ZoekopdrachtDetailPage({
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">Aangemaakt</span>
-              <span>{formatDate(item.created_at)}</span>
+              <span>{formatDateTime(item.created_at)}</span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">Laatst gewijzigd</span>
-              <span>{formatDate(item.updated_at)}</span>
+              <span>{formatDateTime(item.updated_at)}</span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">Website verplicht</span>
@@ -199,37 +319,6 @@ export default async function ZoekopdrachtDetailPage({
                 )}
               </ul>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-none">
-          <CardHeader>
-            <CardTitle className="text-base">Scrape</CardTitle>
-            <CardDescription>
-              Start Google Maps mock scrape via de bestaande job-pipeline.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              Gebruik “Start mock scrape” in de header. Jobs verschijnen onder{" "}
-              <Link href="/jobs" className="underline-offset-4 hover:underline">
-                Scrapingtaken
-              </Link>
-              .
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-none">
-          <CardHeader>
-            <CardTitle className="text-base">Tip</CardTitle>
-            <CardDescription>
-              Dubbel starten opent de bestaande actieve job.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Resultaten blijven bewaard na paginavernieuwing; ze komen uit de
-            database, niet uit lokale mockdata.
           </CardContent>
         </Card>
       </div>

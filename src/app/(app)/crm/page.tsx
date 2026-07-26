@@ -10,8 +10,9 @@ import {
 } from "lucide-react";
 
 import { CrmSubnav } from "@/components/crm/crm-subnav";
+import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ReloadErrorAlert } from "@/components/layout/reload-error-alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -131,9 +132,10 @@ export default async function CrmDashboardPage() {
       <CrmSubnav currentPath="/crm" />
 
       {errorMessage ? (
-        <Alert variant="destructive">
-          <AlertDescription>{errorMessage}</AlertDescription>
-        </Alert>
+        <ReloadErrorAlert
+          title="CRM-dashboard niet beschikbaar"
+          description={errorMessage}
+        />
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -170,15 +172,15 @@ export default async function CrmDashboardPage() {
             </CardHeader>
             <CardContent>
               {!stats || stats.dealsByStage.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nog geen pipeline-data.{" "}
-                  <Link
-                    href="/crm/leads"
-                    className="font-medium underline-offset-4 hover:underline"
-                  >
-                    Maak een lead
-                  </Link>
-                </p>
+                <EmptyState
+                  icon={Users}
+                  title="Nog geen pipeline-data"
+                  description="Voeg leads toe of verplaats bedrijven naar de CRM-pipeline om fases hier te zien."
+                  actionLabel="Maak een lead"
+                  actionHref="/crm/leads"
+                  secondaryActionLabel="Pipeline"
+                  secondaryActionHref="/crm/pipeline"
+                />
               ) : (
                 <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {stats.dealsByStage.map((stage) => (
@@ -190,6 +192,7 @@ export default async function CrmDashboardPage() {
                         <span
                           className="size-2.5 shrink-0 rounded-full"
                           style={{ backgroundColor: stage.color }}
+                          aria-hidden
                         />
                         <span className="truncate">{stage.stageName}</span>
                       </span>

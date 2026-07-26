@@ -5,19 +5,13 @@ import { Activity } from "lucide-react";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/supabase/server";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
+import { createClient } from "@/lib/supabase/server";
+import { formatDateTime, formatStatusLabel } from "@/lib/ui/format";
 
 export const metadata: Metadata = {
   title: "Activiteiten",
 };
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("nl-NL", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
 
 export default async function ActivityPage() {
   const context = await getActiveOrganization();
@@ -51,6 +45,8 @@ export default async function ActivityPage() {
           description="Gebeurtenissen zoals lead-aanmaak, stage-wijzigingen en taken verschijnen hier."
           actionLabel="Naar CRM"
           actionHref="/crm/leads"
+          secondaryActionLabel="Naar zoekopdrachten"
+          secondaryActionHref="/zoekopdrachten"
         />
       ) : (
         <ul className="space-y-3">
@@ -60,9 +56,11 @@ export default async function ActivityPage() {
               className="rounded-xl border border-border px-4 py-3 text-sm"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Badge variant="secondary">{event.event_type}</Badge>
+                <Badge variant="secondary">
+                  {formatStatusLabel(event.event_type)}
+                </Badge>
                 <span className="text-xs text-muted-foreground">
-                  {formatDate(event.created_at)}
+                  {formatDateTime(event.created_at)}
                 </span>
               </div>
               <p className="mt-2 text-muted-foreground">{event.description}</p>

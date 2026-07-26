@@ -19,6 +19,7 @@ import {
   Settings,
   Sparkles,
   StickyNote,
+  Target,
   Users,
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ export const navIconMap = {
   Handshake,
   CheckSquare,
   StickyNote,
+  Target,
   Sparkles,
   Radar,
   Search,

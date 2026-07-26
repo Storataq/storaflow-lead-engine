@@ -1,15 +1,17 @@
 /**
  * Compatibility layer for existing job engine imports.
+ * Foundation (fase 7): also exports Connector / ConnectorFactory / registry.
  */
 
 import "@/lib/scraping/registry/register-defaults";
+import "@/lib/scraping/connectors/bootstrap";
 
 import type {
   ConnectorCapability,
   ConnectorCode,
   ConnectorHealth,
   ConnectorManifest,
-  ConnectorRegistry,
+  ConnectorRegistry as ScrapeConnectorRegistryType,
   ConnectorSearchContext,
   ConnectorSearchPage,
   ScrapeConnector,
@@ -21,7 +23,7 @@ import {
   listRegisteredManifests,
 } from "@/lib/scraping/registry/store";
 import type {
-  Connector,
+  Connector as FrameworkModuleConnector,
   ConnectorJob,
   ConnectorManifest as NewManifest,
   ConnectorResult,
@@ -33,11 +35,39 @@ export type {
   ConnectorCode,
   ConnectorHealth,
   ConnectorManifest,
-  ConnectorRegistry,
   ConnectorSearchContext,
   ConnectorSearchPage,
   ScrapeConnector,
 };
+
+/** @deprecated Prefer ScrapeConnectorRegistry from types */
+export type ConnectorRegistry = ScrapeConnectorRegistryType;
+
+export type { Connector } from "@/lib/scraping/connectors/connector";
+export type { ConnectorCapabilities } from "@/lib/scraping/connectors/capabilities";
+export {
+  ConnectorFactory,
+  defaultConnectorFactory,
+} from "@/lib/scraping/connectors/factory";
+export {
+  ConnectorRegistry as FoundationConnectorRegistry,
+  defaultConnectorRegistry,
+} from "@/lib/scraping/connectors/registry";
+export {
+  MockConnector,
+  createMockConnector,
+} from "@/lib/scraping/connectors/mock";
+export { runConnectorPipeline } from "@/lib/scraping/connectors/pipeline";
+export {
+  ConnectorError,
+  ConnectorNotFoundError,
+  ConnectorValidationError,
+  ConnectorNotConnectedError,
+} from "@/lib/scraping/connectors/errors";
+export {
+  defaultConnectorLogger,
+  InMemoryConnectorLogger,
+} from "@/lib/scraping/connectors/logger";
 
 function toLegacyManifest(manifest: NewManifest): ConnectorManifest {
   return {
@@ -66,7 +96,7 @@ function toDiscovered(item: ConnectorResult) {
   };
 }
 
-function adaptConnector(connector: Connector): ScrapeConnector {
+function adaptConnector(connector: FrameworkModuleConnector): ScrapeConnector {
   return {
     get manifest() {
       return toLegacyManifest(connector.manifest);
@@ -128,7 +158,7 @@ export function resolveJobConnector(
   return getConnectorOrThrow("mock");
 }
 
-export const connectorRegistry: ConnectorRegistry = {
+export const connectorRegistry: ScrapeConnectorRegistryType = {
   list: listConnectorManifests,
   get: getConnector,
   getOrThrow: getConnectorOrThrow,
@@ -140,6 +170,6 @@ export const PLANNED_CONNECTOR_MANIFESTS = listConnectorManifests().filter(
 
 export const mockScrapeConnector = getConnectorOrThrow("mock");
 
-export function listFrameworkConnectors(): Connector[] {
+export function listFrameworkConnectors(): FrameworkModuleConnector[] {
   return listRegisteredConnectors();
 }

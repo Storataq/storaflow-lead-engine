@@ -9,6 +9,7 @@ export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
   { href: "/zoekopdrachten", label: "Zoekopdrachten", icon: "Search" },
   { href: "/jobs", label: "Scrape Jobs", icon: "ListTodo" },
+  { href: "/connectors", label: "Connectors", icon: "Plug" },
   { href: "/companies", label: "Bedrijven", icon: "Building2" },
   { href: "/contacts", label: "Contactgegevens", icon: "Mail" },
   { href: "/exclusions", label: "Uitsluitlijst", icon: "Ban" },

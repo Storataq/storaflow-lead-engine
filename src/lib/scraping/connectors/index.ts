@@ -1,59 +1,123 @@
 /**
- * In-process connector registry.
- *
- * Today: mock connector is executable; planned connectors are manifests only.
- * Later: worker nodes resolve connectors by code, apply rate limits / proxies.
+ * Compatibility layer for existing job engine imports.
  */
 
-import { PLANNED_CONNECTOR_MANIFESTS } from "@/lib/scraping/connectors/catalog";
-import { mockScrapeConnector } from "@/lib/scraping/connectors/mock-connector";
+import "@/lib/scraping/registry/register-defaults";
+
 import type {
+  ConnectorCapability,
   ConnectorCode,
+  ConnectorHealth,
   ConnectorManifest,
   ConnectorRegistry,
+  ConnectorSearchContext,
+  ConnectorSearchPage,
   ScrapeConnector,
 } from "@/lib/scraping/connectors/types";
+import {
+  getRegisteredConnector,
+  getRegisteredConnectorOrThrow,
+  listRegisteredConnectors,
+  listRegisteredManifests,
+} from "@/lib/scraping/registry/store";
+import type {
+  Connector,
+  ConnectorJob,
+  ConnectorManifest as NewManifest,
+  ConnectorResult,
+  ConnectorSearchPage as NewSearchPage,
+} from "@/lib/scraping/types/connector";
 
-const executable = new Map<ConnectorCode, ScrapeConnector>([
-  [mockScrapeConnector.manifest.code, mockScrapeConnector],
-]);
+export type {
+  ConnectorCapability,
+  ConnectorCode,
+  ConnectorHealth,
+  ConnectorManifest,
+  ConnectorRegistry,
+  ConnectorSearchContext,
+  ConnectorSearchPage,
+  ScrapeConnector,
+};
+
+function toLegacyManifest(manifest: NewManifest): ConnectorManifest {
+  return {
+    code: manifest.code,
+    displayName: manifest.name,
+    description: manifest.description,
+    capabilities: ["search_discovery"],
+    regions: manifest.capabilities.supportedCountries,
+    supportsProxy: manifest.capabilities.requiresProxy,
+    supportsRateLimit: true,
+    supportsRetry: true,
+    health: manifest.health,
+  };
+}
+
+function toDiscovered(item: ConnectorResult) {
+  return {
+    companyName: item.companyName,
+    websiteUrl: item.website ?? undefined,
+    sourceUrl: item.sourceUrl,
+    sourceType: "search_result" as const,
+    city: item.city ?? undefined,
+    region: item.region ?? undefined,
+    country: item.country ?? undefined,
+    industry: item.category ?? undefined,
+  };
+}
+
+function adaptConnector(connector: Connector): ScrapeConnector {
+  return {
+    get manifest() {
+      return toLegacyManifest(connector.manifest);
+    },
+    async searchPage(context: ConnectorSearchContext): Promise<ConnectorSearchPage> {
+      const job: ConnectorJob = {
+        organizationId: context.organizationId,
+        jobId: context.jobId,
+        keywords: context.search.keywords ?? [context.search.keyword],
+        countries:
+          context.search.countries ??
+          (context.search.country ? [context.search.country] : []),
+        cities:
+          context.search.cities ??
+          (context.search.city ? [context.search.city] : []),
+        regions:
+          context.search.regions ??
+          (context.search.region ? [context.search.region] : []),
+        languages: context.search.languages ?? [],
+        industries:
+          context.search.industries ??
+          (context.search.industry ? [context.search.industry] : []),
+        searchPrompt: context.search.searchPrompt,
+        pageIndex: context.pageIndex,
+        pageSize: context.pageSize,
+      };
+
+      const page: NewSearchPage = await connector.searchPage(job);
+      return {
+        sourceCode: page.sourceCode,
+        items: page.items.map(toDiscovered),
+        hasMore: page.hasMore,
+        meta: page.meta,
+      };
+    },
+  };
+}
 
 export function listConnectorManifests(): ConnectorManifest[] {
-  const plannedCodes = new Set(PLANNED_CONNECTOR_MANIFESTS.map((m) => m.code));
-  const manifests: ConnectorManifest[] = [
-    mockScrapeConnector.manifest,
-    ...PLANNED_CONNECTOR_MANIFESTS,
-  ];
-
-  // Prefer executable health when a planned code later gains an adapter.
-  return manifests.map((manifest) => {
-    const live = executable.get(manifest.code);
-    if (!live) return manifest;
-    if (plannedCodes.has(manifest.code) && manifest.code !== "mock") {
-      return { ...manifest, health: live.manifest.health };
-    }
-    return live.manifest;
-  });
+  return listRegisteredManifests().map(toLegacyManifest);
 }
 
 export function getConnector(code: ConnectorCode): ScrapeConnector | null {
-  return executable.get(code) ?? null;
+  const connector = getRegisteredConnector(code);
+  return connector ? adaptConnector(connector) : null;
 }
 
 export function getConnectorOrThrow(code: ConnectorCode): ScrapeConnector {
-  const connector = getConnector(code);
-  if (!connector) {
-    throw new Error(
-      `Connector "${code}" is not implemented yet (mock-only foundation).`,
-    );
-  }
-  return connector;
+  return adaptConnector(getRegisteredConnectorOrThrow(code));
 }
 
-/**
- * Resolve which connector to run for a job.
- * Prefer an enabled search_queries.sources code if implemented; else mock.
- */
 export function resolveJobConnector(
   preferredSourceCodes: string[] | null | undefined,
 ): ScrapeConnector {
@@ -61,7 +125,7 @@ export function resolveJobConnector(
     const connector = getConnector(code);
     if (connector) return connector;
   }
-  return mockScrapeConnector;
+  return getConnectorOrThrow("mock");
 }
 
 export const connectorRegistry: ConnectorRegistry = {
@@ -69,3 +133,13 @@ export const connectorRegistry: ConnectorRegistry = {
   get: getConnector,
   getOrThrow: getConnectorOrThrow,
 };
+
+export const PLANNED_CONNECTOR_MANIFESTS = listConnectorManifests().filter(
+  (item) => item.code !== "mock",
+);
+
+export const mockScrapeConnector = getConnectorOrThrow("mock");
+
+export function listFrameworkConnectors(): Connector[] {
+  return listRegisteredConnectors();
+}

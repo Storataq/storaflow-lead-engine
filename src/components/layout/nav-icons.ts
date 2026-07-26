@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   ListTodo,
   Mail,
+  Plug,
   Search,
   Settings,
 } from "lucide-react";
@@ -15,6 +16,7 @@ export const navIconMap = {
   LayoutDashboard,
   Search,
   ListTodo,
+  Plug,
   Building2,
   Mail,
   Ban,

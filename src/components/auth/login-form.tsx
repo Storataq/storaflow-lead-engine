@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 
 import { loginAction, type ActionResult } from "@/lib/auth/actions";
-import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
+import { APP_DESCRIPTION } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,7 +24,7 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md border-border/80 shadow-sm">
       <CardHeader className="space-y-2">
-        <CardTitle className="text-xl tracking-tight">{APP_NAME}</CardTitle>
+        <CardTitle className="text-xl tracking-tight">Sign in</CardTitle>
         <CardDescription>{APP_DESCRIPTION}</CardDescription>
       </CardHeader>
       <CardContent>

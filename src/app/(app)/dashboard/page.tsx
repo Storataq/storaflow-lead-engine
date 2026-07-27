@@ -156,7 +156,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader
         title="Dashboard"
-        description="Overzicht van leads, CRM-pipeline, scrapingtaken en recente activiteit."
+        description="Overview of leads, CRM pipeline, scrape jobs and recent activity on the Storaflow platform."
         breadcrumbs={[{ label: "Dashboard" }]}
         actions={
           <div className="flex flex-wrap gap-2">

@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
+import { BrandMark } from "@/components/brand/brand-mark";
 import { navIconMap, type NavIconName } from "@/components/layout/nav-icons";
-import { NAV_ITEMS, APP_NAME } from "@/lib/constants";
+import { NAV_ITEMS, APP_POWERED_BY } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 type AppSidebarProps = {
@@ -21,12 +22,12 @@ export function AppSidebar({ organizationName }: AppSidebarProps) {
   return (
     <aside className="hidden w-60 shrink-0 border-r border-border bg-sidebar text-sidebar-foreground lg:flex lg:flex-col">
       <div className="flex h-14 items-center border-b border-sidebar-border px-5">
-        <Link href="/dashboard" className="flex flex-col">
-          <span className="text-sm font-semibold tracking-tight">{APP_NAME}</span>
-          <span className="truncate text-xs text-muted-foreground">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <BrandMark href="/dashboard" />
+          <span className="truncate pl-9 text-xs text-muted-foreground">
             {organizationName}
           </span>
-        </Link>
+        </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
         {NAV_ITEMS.map((item) => {
@@ -119,7 +120,8 @@ export function AppSidebar({ organizationName }: AppSidebarProps) {
         })}
       </nav>
       <div className="border-t border-sidebar-border p-4 text-xs text-muted-foreground">
-        Alleen publieke zakelijke gegevens
+        <p>Alleen publieke zakelijke gegevens</p>
+        <p className="mt-1">{APP_POWERED_BY}</p>
       </div>
     </aside>
   );

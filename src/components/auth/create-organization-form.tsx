@@ -46,7 +46,7 @@ export function CreateOrganizationForm() {
               name="name"
               required
               minLength={2}
-              placeholder="Bijv. StorataQ Intern"
+              placeholder="e.g. Acme Sales Team"
             />
           </div>
           {state && !state.success ? (

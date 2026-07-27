@@ -1,29 +1,43 @@
-# Lead Engine (Storaflow)
+# Storaflow
 
-Interne webapp om publieke zakelijke bedrijfs- en contactgegevens te verzamelen op basis van branche, zoekterm, plaats, regio en land — en die leads te beheren in een volledig CRM.
+**Storaflow** is an AI lead engine with CRM, email automation, and company intelligence.
 
-Branding in code blijft voorlopig generiek (`Lead Engine`). De productlijn richting commerciële SaaS heet **Storaflow**.
+Collect public business company and contact data by industry, search term, city, region and country — then manage outreach through CRM funnels, campaigns and sequences.
 
-## Huidige status — Foundation + Live scrape + Contact discovery
+## Product pillars
 
-Phase 20A foundation, **20B live scraper** (OpenStreetMap Nominatim), and **20C website contact discovery** are in tree:
+| Pillar | What it covers |
+|--------|----------------|
+| **AI Lead Engine** | Search → scrape → companies/contacts → enrichment → classification |
+| **CRM** | Leads, pipelines, funnels, deals, tasks, notes, qualification, opportunities |
+| **Email Automation** | Templates, sequences, campaigns, execution, preferences, analytics |
+| **Company Intelligence** | Categories, enrichment, campaign readiness, category actions |
 
-1. Organisatie + login (Supabase Auth)
+## Current status
+
+Phase 20–23 foundation is in tree:
+
+1. Organization + login (Supabase Auth)
 2. Zoekopdrachten → scrape jobs (mock + live OSM)
 3. Bedrijven / contactsignalen
-4. Website enrichment: crawl publieke pages → e-mail/telefoon/social discovery
-5. Funnel activation: lead → qualification → pipeline (≤ outreach-ready) → campaign ready
-6. Email Engine: templates → campaigns → sequences → execution → Resend → delivery/engagement → preferences → analytics → optional AI → **production hardening / ops (21L)**
-7. CRM: leads, pipeline, deals, tasks, notes, funnels
-8. Qualification, Opportunity Insights, Executive Dashboard
+4. Website enrichment
+5. Funnel activation → campaign ready
+6. Email Engine (templates → campaigns → sequences → Resend → analytics → optional AI)
+7. CRM + qualification + opportunity insights + executive dashboard
+8. Company categories, AI classification, category actions
 
-**Nog niet (blocking for broad production sending):** Resend/DNS/manual worker scheduling fully configured per environment, legal review, rehearsed DR. Current target after 21L + manual setup: **controlled test mode / limited pilot**.
+**Still required for broad production sending:** Resend/DNS/worker scheduling per environment, legal review, rehearsed DR. Target after hardening: **controlled test mode / limited pilot**.
 
-Email ops: [docs/EMAIL-OPERATIONS.md](docs/EMAIL-OPERATIONS.md) · Readiness: [docs/EMAIL-PRODUCTION-READINESS.md](docs/EMAIL-PRODUCTION-READINESS.md)  
-Email engine: [docs/AUTOMATED-EMAIL-ENGINE.md](docs/AUTOMATED-EMAIL-ENGINE.md)  
-Campaign manager: [docs/CAMPAIGN-MANAGER.md](docs/CAMPAIGN-MANAGER.md)
+Docs:
 
-Release notes: [docs/RELEASE-v0.1-FOUNDATION.md](docs/RELEASE-v0.1-FOUNDATION.md)
+- Email ops: [docs/EMAIL-OPERATIONS.md](docs/EMAIL-OPERATIONS.md)
+- Readiness: [docs/EMAIL-PRODUCTION-READINESS.md](docs/EMAIL-PRODUCTION-READINESS.md)
+- Email engine: [docs/AUTOMATED-EMAIL-ENGINE.md](docs/AUTOMATED-EMAIL-ENGINE.md)
+- Campaign manager: [docs/CAMPAIGN-MANAGER.md](docs/CAMPAIGN-MANAGER.md)
+- Company categories: [docs/company-categories.md](docs/company-categories.md)
+- Classification: [docs/company-classification.md](docs/company-classification.md)
+- Category actions: [docs/category-actions.md](docs/category-actions.md)
+- Release notes: [docs/RELEASE-v0.1-FOUNDATION.md](docs/RELEASE-v0.1-FOUNDATION.md)
 
 ## Stack
 
@@ -31,16 +45,16 @@ Release notes: [docs/RELEASE-v0.1-FOUNDATION.md](docs/RELEASE-v0.1-FOUNDATION.md
 - Tailwind CSS + shadcn/ui
 - Supabase (Auth, PostgreSQL, RLS)
 - Zod + React Hook Form / server actions
-- Connector framework onder `src/lib/scraping/connectors/`
+- Connector framework under `src/lib/scraping/connectors/`
 
-## Lokale installatie
+## Local setup
 
 ```bash
 npm install
 cp .env.example .env.local
 ```
 
-Vul de waarden in `.env.local` in (zie hieronder).
+Fill `.env.local`, then:
 
 ```bash
 npm run dev
@@ -50,146 +64,41 @@ App: [http://localhost:3000](http://localhost:3000)
 
 ## Environment variables
 
-| Variable | Waar | Beschrijving |
+| Variable | Where | Description |
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Client + server | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Client + server | Publieke publishable key (RLS van toepassing) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Alleen server/worker | Service role — **nooit** in clientcode |
-| `NEXT_PUBLIC_APP_URL` | App | Basis-URL, bijv. `http://localhost:3000` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Client + server | Public publishable key (RLS applies) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server/worker only | Service role — **never** in client code |
+| `NEXT_PUBLIC_APP_URL` | App | Base URL, e.g. `http://localhost:3000` |
 
-## Supabase migraties (handmatig)
+## Supabase migrations (manual)
 
-Voer migraties **niet** automatisch vanuit de app uit. Doe dit handmatig in volgorde via Supabase SQL Editor of CLI:
+Do **not** auto-run migrations from the app. Apply manually in order via Supabase SQL Editor or CLI:
 
 1. `supabase/migrations/20260726000001_initial_schema.sql`
 2. `supabase/migrations/20260726000002_rls_policies.sql`
-3. latere migraties in dezelfde map (`…00003` t/m recentste)
+3. Later migrations in the same folder (`…00003` through latest)
 
 ```bash
 npx supabase db push
 ```
 
-Zie [docs/database.md](docs/database.md).
+See [docs/database.md](docs/database.md).
 
-## Auth (intern)
+## Auth
 
-- Geen publieke registratie in de UI
-- Maak gebruikers aan via Supabase Auth (Dashboard → Authentication → Users)
-- Na eerste login: organisatie aanmaken
-- `organization_id` wordt altijd server-side afgeleid uit lidmaatschap
+- No public registration in the UI
+- Create users via Supabase Auth (Dashboard → Authentication → Users)
+- After first login: create an organization
+- `organization_id` is always derived server-side from membership
 
-## Scripts
+## Branding
 
-```bash
-npm run dev      # Next.js development
-npm run build    # Productiebuild
-npm run lint     # ESLint
-npm run start    # Productieserver
-```
+User-facing product name is **Storaflow** (`APP_NAME` in `src/lib/constants.ts`).  
+Repository / package name may still say `storataq-lead-engine` for historical stability — that is intentional and not part of the product UI.
 
-## Projectstructuur
+Logo / PWA icon artwork: placeholder “S” mark until final brand assets land (`src/components/brand/brand-mark.tsx`, `public/icons/icon.svg`).
 
-```
-src/
-  app/(app)/           # Authenticated routes (+ loading/error)
-  components/
-    layout/            # PageHeader, EmptyState, PageSkeleton, RouteLoading, PageErrorState
-    crm/               # CRM UI (leads, pipeline, dashboards, …)
-  lib/
-    auth/              # Login / logout / org actions
-    companies/         # Bedrijvenqueries
-    contacts/          # Contactsignalen uit scrape_results
-    crm/               # CRM + qualification / opportunities / executive analytics
-    international/     # Landen, talen, bronnen, branches
-    jobs/              # Queue, executor, persist, actions
-    organizations/     # Actieve organisatie (server-side)
-    scraping/
-      connectors/      # Connector framework + mock + google_maps MVP
-      registry/        # Catalogus voor Connector Management UI
-    searches/          # Zoekopdracht CRUD + preview
-    ui/                # Gedeelde UI helpers (user-facing errors)
-  types/               # Database / Supabase types
-supabase/migrations/   # SQL migraties
-docs/                  # Architectuur, DB, roadmap, release notes
-worker/                # Placeholder voor latere background worker
-```
+## License / copyright
 
-## Module guide (kort)
-
-| Module | Route / locatie | Notitie |
-|---|---|---|
-| Search | `/zoekopdrachten` | Criteria → mock scrape jobs |
-| Jobs | `/jobs` | Queue, logs, resultaten |
-| Companies | `/companies` | Persistente scrape-output |
-| CRM | `/crm/*` | Leads, pipeline, deals, tasks, notes |
-| Qualification | `/crm/qualification` | Deterministische lead scores |
-| Opportunities | `/crm/opportunities` | Opportunity + next-best-action |
-| Executive | `/crm/executive` | Funnel / pipeline / revenue analytics |
-| Connectors | `/connectors` | Manifests; live netwerk uit |
-
-Uitgebreid: [docs/architecture.md](docs/architecture.md)
-
-## UI conventions
-
-- **Loading:** route `loading.tsx` → `RouteLoading` / `PageSkeleton`
-- **Empty:** `EmptyState` met icon, titel, beschrijving, primaire (+ optionele secundaire) actie
-- **Errors:** `toUserFacingError` + `Alert` of `PageErrorState` (retry + terug)
-- **CRM nav:** sidebar children + `CrmSubnav`
-
-## Connectorarchitectuur
-
-- Connectors implementeren een gedeelde interface (capabilities, health, mock search).
-- Registry + factory kiezen de connectorcode (standaard `google_maps` voor jobs).
-- Catalogus-UI (`/connectors`) toont manifests; live netwerk is uitgeschakeld.
-- Alle huidige connectors draaien in **mock mode** — geen Places API, geen browser, geen proxies.
-
-Zie [docs/future-integrations.md](docs/future-integrations.md) voor uitbreidingspunten.
-
-## Jobflow
-
-```
-Zoekopdracht → startScrapeAction → scrape_jobs (queued)
-  → client poll advanceMockScrapeAction
-  → MockJobExecutor + ConnectorFactory
-  → pipeline (normalize / dedupe)
-  → persistPipelineResults → companies + scrape_results + logs
-  → completed
-```
-
-Statuses: `draft` → `pending`/`queued` → `active`/`running` → `completed` | `failed` | `paused` | `cancelled`.
-
-## Pipeline (scrape)
-
-1. Connector levert mock business results
-2. Normalisatie van naam/domein/locatie
-3. Deduplicatie (sourceId, domain, name+city+country)
-4. Persist naar `companies`, `company_sources`, `scrape_results`
-5. Contactsignalen (e-mail/telefoon) blijven in `raw_payload` tot een latere contacts-fase
-
-## Privacy & veiligheid
-
-- Alleen publiek toegankelijke zakelijke informatie
-- Geen CAPTCHA-/login-omzeiling
-- Geen scraping van private IP’s / localhost / non-HTTP(S)
-- RLS op alle organisatiegebonden tabellen
-- Service role alleen op server/worker
-- Begrijpelijke foutteksten in de UI (geen ruwe SQL/providerfouten)
-
-## Documentatie
-
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — canonical architecture (Phase 20A)
-- [ROADMAP.md](docs/ROADMAP.md) — phases 20B–D and email engine
-- [RELEASE-v0.1-FOUNDATION.md](docs/RELEASE-v0.1-FOUNDATION.md) — foundation release notes
-- [architecture.md](docs/architecture.md) — short architecture summary
-- [Database](docs/database.md)
-- [Supabase](docs/supabase.md)
-- [Future integrations](docs/future-integrations.md)
-
-## Toekomst (na v0.1)
-
-- Echte Google Maps / Places / Search connectors
-- Website crawler + contactextractie
-- E-mail find/validate + campagnes (expliciete send)
-- Background worker claim-loop
-- AI adapters voor summaries (server-only)
-- SaaS: registratie, billing, teams, API, webhooks
+© Storaflow — internal product. See application settings for version and environment.

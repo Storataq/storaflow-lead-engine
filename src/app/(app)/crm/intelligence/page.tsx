@@ -60,7 +60,7 @@ export default function CompanyIntelligencePage() {
               Lead Enrichment
             </CardTitle>
             <CardDescription>
-              Live enrichment blijft op de lead workspace (Intelligence-tab).
+              Live enrichment blijft beschikbaar op de lead detailpagina (Intelligence-tab).
               Deze hub bereidt connectors voor.
             </CardDescription>
           </CardHeader>

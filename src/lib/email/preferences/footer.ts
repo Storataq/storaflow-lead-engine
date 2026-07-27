@@ -37,6 +37,7 @@ function t(language: string | null | undefined, key: string): string {
       terms: "Terms",
       category: "Category",
       sentBy: "Sent by",
+      poweredBy: "Powered by Storaflow",
     },
     nl: {
       unsubscribe: "Afmelden",
@@ -45,6 +46,7 @@ function t(language: string | null | undefined, key: string): string {
       terms: "Voorwaarden",
       category: "Categorie",
       sentBy: "Verzonden door",
+      poweredBy: "Powered by Storaflow",
     },
   };
   return dict[lang][key] ?? dict.en[key] ?? key;
@@ -88,6 +90,7 @@ export function injectCompliantFooter(
         : ""
     }
   </p>
+  <p style="margin:12px 0 0 0;color:#9ca3af;">${escapeHtml(t(input.language, "poweredBy"))}</p>
 </div>`.trim();
 
   const footerText = [
@@ -100,6 +103,7 @@ export function injectCompliantFooter(
       ? `${t(input.language, "privacy")}: ${input.privacyPolicyUrl}`
       : null,
     input.termsUrl ? `${t(input.language, "terms")}: ${input.termsUrl}` : null,
+    t(input.language, "poweredBy"),
   ]
     .filter(Boolean)
     .join("\n");

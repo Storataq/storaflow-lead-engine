@@ -11,7 +11,7 @@ This document is the release summary only. No GitHub Release was created.
 
 ## Summary
 
-v0.1 is the **production-ready foundation** of Storaflow (internally still branded Lead Engine in places). It delivers an authenticated, organization-isolated web app for search → mock scrape → companies/contacts → full CRM → intelligence → qualification → opportunities → executive analytics.
+v0.1 is the **production-ready foundation** of Storaflow. It delivers an authenticated, organization-isolated web app for search → mock scrape → companies/contacts → full CRM → intelligence → qualification → opportunities → executive analytics.
 
 No live scraping, no external AI, no outbound email.
 

@@ -1,6 +1,6 @@
 # Storaflow Release Notes — v0.1 Foundation
 
-**Product:** Storaflow (app branding: Lead Engine)  
+**Product:** Storaflow  
 **Version:** 0.1 Foundation  
 **Phases:** 20 + 20A — Production Ready Foundation  
 **Date:** 2026-07-26  

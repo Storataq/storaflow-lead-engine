@@ -57,7 +57,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
       <div>
         <PageHeader
           title="Lead"
-          description="Lead workspace."
+          description="Lead overview."
           breadcrumbs={[
             { label: "Dashboard", href: "/dashboard" },
             { label: "CRM", href: "/crm" },
@@ -174,7 +174,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
   } catch (error) {
     errorMessage = toUserFacingError(
       error,
-      "Kon lead workspace gegevens niet volledig laden.",
+      "Kon leadgegevens niet volledig laden.",
     );
   }
 
@@ -182,7 +182,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     <div>
       <PageHeader
         title={lead.company_name}
-        description="Lead workspace met funnel readiness, intelligence, timeline, notes, tasks en deals."
+        description="Lead overview with funnel readiness, intelligence, timeline, notes, tasks and deals."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "CRM", href: "/crm" },

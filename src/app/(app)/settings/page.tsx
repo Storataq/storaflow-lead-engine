@@ -10,7 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { DEFAULT_USER_AGENT } from "@/lib/constants";
+import {
+  APP_COPYRIGHT,
+  APP_DESCRIPTION,
+  APP_NAME,
+  APP_TAGLINE,
+  APP_VERSION,
+  DEFAULT_USER_AGENT,
+} from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Instellingen",
@@ -33,17 +40,50 @@ const defaults = [
 ] as const;
 
 export default function SettingsPage() {
+  const environment =
+    process.env.NODE_ENV === "production" ? "Production" : "Development";
+
   return (
     <div>
       <PageHeader
         title="Instellingen"
-        description="Veilige standaardwaarden voor scrapinggedrag. Bewerkbare instellingen volgen later."
+        description="Productinformatie en veilige standaardwaarden voor scrapinggedrag."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Instellingen" },
         ]}
       />
       <div className="grid max-w-3xl gap-4">
+        <Card className="shadow-none">
+          <CardHeader>
+            <CardTitle className="text-base">Application</CardTitle>
+            <CardDescription>{APP_DESCRIPTION}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <dl className="divide-y divide-border">
+              <div className="grid gap-1 py-3 sm:grid-cols-[14rem_1fr] sm:gap-4">
+                <dt className="text-sm text-muted-foreground">Product name</dt>
+                <dd className="text-sm font-medium">{APP_NAME}</dd>
+              </div>
+              <div className="grid gap-1 py-3 sm:grid-cols-[14rem_1fr] sm:gap-4">
+                <dt className="text-sm text-muted-foreground">Tagline</dt>
+                <dd className="text-sm font-medium">{APP_TAGLINE}</dd>
+              </div>
+              <div className="grid gap-1 py-3 sm:grid-cols-[14rem_1fr] sm:gap-4">
+                <dt className="text-sm text-muted-foreground">Version</dt>
+                <dd className="text-sm font-medium">{APP_VERSION}</dd>
+              </div>
+              <div className="grid gap-1 py-3 sm:grid-cols-[14rem_1fr] sm:gap-4">
+                <dt className="text-sm text-muted-foreground">Environment</dt>
+                <dd className="text-sm font-medium">{environment}</dd>
+              </div>
+              <div className="grid gap-1 py-3 sm:grid-cols-[14rem_1fr] sm:gap-4">
+                <dt className="text-sm text-muted-foreground">Copyright</dt>
+                <dd className="text-sm font-medium">{APP_COPYRIGHT}</dd>
+              </div>
+            </dl>
+          </CardContent>
+        </Card>
         <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Company Categories</CardTitle>

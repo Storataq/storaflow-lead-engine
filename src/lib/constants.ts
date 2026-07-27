@@ -1,6 +1,13 @@
-export const APP_NAME = "Lead Engine";
+export const APP_NAME = "Storaflow";
+export const APP_TAGLINE = "AI Lead Engine · CRM · Email Automation";
 export const APP_DESCRIPTION =
-  "Interne leadverzamelaar voor publieke zakelijke contactgegevens";
+  "Storaflow — AI lead engine with CRM, email automation, and company intelligence for public business data.";
+export const APP_VERSION = "0.1.0";
+export const APP_POWERED_BY = "Powered by Storaflow";
+export const APP_COPYRIGHT = `© ${new Date().getFullYear()} Storaflow`;
+
+/** Short label for PWA / install surfaces */
+export const APP_SHORT_NAME = "Storaflow";
 
 export const DEFAULT_USER_AGENT =
   "StoraflowWebsiteCrawler/0.1 (+https://storataq.local; respectful; contact-discovery)";
@@ -49,7 +56,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/enrichment", label: "Website Enrichment", icon: "Globe2" },
   {
     href: "/email",
-    label: "Email Engine",
+    label: "Email",
     icon: "Mail",
     children: [
       { href: "/email", label: "Overview", icon: "Mail" },

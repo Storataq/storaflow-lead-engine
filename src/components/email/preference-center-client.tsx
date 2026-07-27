@@ -233,6 +233,7 @@ export function PreferenceCenterClient(props: {
             <a href={props.termsUrl}>{tp(locale, "pref.terms")}</a>
           ) : null}
         </div>
+        <p>Powered by Storaflow</p>
       </footer>
     </div>
   );
@@ -356,6 +357,7 @@ export function UnsubscribePageClient(props: {
         </div>
       )}
       {message && !done ? <p className="mt-4 text-sm">{message}</p> : null}
+      <p className="mt-10 text-xs text-muted-foreground">Powered by Storaflow</p>
     </div>
   );
 }

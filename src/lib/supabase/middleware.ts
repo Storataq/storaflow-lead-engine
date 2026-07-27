@@ -47,7 +47,18 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/favicon") ||
     pathname.includes(".");
 
-  if (!user && !isAuthRoute && !isPublicAsset) {
+  // Phase 21L — public email surfaces must not require a session.
+  const isPublicEmailRoute =
+    pathname.startsWith("/api/webhooks/email/") ||
+    pathname.startsWith("/api/email/open/") ||
+    pathname.startsWith("/api/email/click/") ||
+    pathname.startsWith("/api/email/unsubscribe/") ||
+    pathname.startsWith("/api/internal/health") ||
+    pathname.startsWith("/api/internal/email/") ||
+    pathname.startsWith("/preferences/") ||
+    pathname.startsWith("/unsubscribe/");
+
+  if (!user && !isAuthRoute && !isPublicAsset && !isPublicEmailRoute) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     redirectUrl.searchParams.set("next", pathname);

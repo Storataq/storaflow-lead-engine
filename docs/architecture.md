@@ -29,6 +29,10 @@ Auth + Organization (RLS)
         ├─ Funnel activation (20D)
         │         └─ Lead → qualify → opportunity → stage ≤ outreach-ready → tasks → campaign_readiness
         │
+        ├─ Automated Email Engine (21A–21K)
+        │         └─ templates / campaigns / sequences / queue / Resend / tracking /
+        │            preferences / analytics / optional AI drafts (human review; no auto-send)
+        │
         └─ CRM (leads, pipeline, deals, tasks, notes, funnels)
                 │
                 ├─ Company Intelligence / Sources / Enrichment
@@ -49,13 +53,16 @@ Auth + Organization (RLS)
 | `src/lib/scraping/connectors/` | Connector interface, registry, mock, OSM live |
 | `src/lib/enrichment/` | Website crawler, contact discovery, email validation (20C) |
 | `src/lib/crm/funnel-activation/` | Funnel orchestrator + campaign readiness (20D) |
+| `src/lib/email/` | Automated Email Engine (templates → AI assistance) |
+| `src/lib/email/ai/` | Phase 21K provider-agnostic AI layer |
 | `src/lib/crm/` | CRM queries/actions + qualification / opportunities / executive |
 | `src/lib/ui/format.ts` | Shared display formatters |
-| `src/lib/email/future-engine.ts` | Email engine placeholders (no send) |
 | `supabase/migrations/` | Manual additive SQL |
 | `worker/` | Future background worker stub |
 | `docs/CONTACT-DISCOVERY.md` | Phase 20C crawler / validation docs |
 | `docs/FUNNEL-ACTIVATION.md` | Phase 20D funnel / campaign-ready docs |
+| `docs/AUTOMATED-EMAIL-ENGINE.md` | Email engine docs |
+| `docs/EMAIL-AI-ARCHITECTURE.md` | Phase 21K AI architecture |
 
 ## Auth & security
 

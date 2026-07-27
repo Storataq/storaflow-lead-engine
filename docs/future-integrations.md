@@ -23,13 +23,14 @@ mailbox probing (opt-in), address conflict review workflow.
 - Mailbox status remains `not_checked` until a verification provider is configured
 - **Do not** auto-send mail from enrichment
 
-## Campaign / funnel activation (Phase 20D — delivered)
+## Campaign / outbound email (foundation delivered)
 
-See [FUNNEL-ACTIVATION.md](./FUNNEL-ACTIVATION.md).
+Architecture lives in `src/lib/email/` with placeholder UI under `/email`.
+See [AUTOMATED-EMAIL-ENGINE.md](./AUTOMATED-EMAIL-ENGINE.md).
 
-Campaign Ready queues leads for the future email engine; **no send**.
+**Still not implemented:** provider SDKs, workers, send, tracking webhooks.
 
-## Campaign / outbound email / automation
+## Campaign / outbound email / automation (execution)
 
 - **Hook:** new `lib/campaigns/` (or similar) consuming campaign-ready leads from opportunity readiness
 - **CRM:** tasks/notes remain the human follow-up layer until automation ships

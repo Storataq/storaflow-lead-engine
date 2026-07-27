@@ -13,13 +13,15 @@ Phase 20A foundation, **20B live scraper** (OpenStreetMap Nominatim), and **20C 
 3. Bedrijven / contactsignalen
 4. Website enrichment: crawl publieke pages → e-mail/telefoon/social discovery
 5. Funnel activation: lead → qualification → pipeline (≤ outreach-ready) → campaign ready
-6. CRM: leads, pipeline, deals, tasks, notes, funnels
-7. Qualification, Opportunity Insights, Executive Dashboard
+6. Email Engine: templates → campaigns → sequences → execution → Resend → delivery/engagement → preferences → analytics → optional AI → **production hardening / ops (21L)**
+7. CRM: leads, pipeline, deals, tasks, notes, funnels
+8. Qualification, Opportunity Insights, Executive Dashboard
 
-**Nog niet:** Places API / Google live, browser automation, CAPTCHA bypass, mailbox probing, outbound e-mail, campagnes.
+**Nog niet (blocking for broad production sending):** Resend/DNS/manual worker scheduling fully configured per environment, legal review, rehearsed DR. Current target after 21L + manual setup: **controlled test mode / limited pilot**.
 
-Contact discovery: [docs/CONTACT-DISCOVERY.md](docs/CONTACT-DISCOVERY.md)  
-Funnel activation: [docs/FUNNEL-ACTIVATION.md](docs/FUNNEL-ACTIVATION.md)
+Email ops: [docs/EMAIL-OPERATIONS.md](docs/EMAIL-OPERATIONS.md) · Readiness: [docs/EMAIL-PRODUCTION-READINESS.md](docs/EMAIL-PRODUCTION-READINESS.md)  
+Email engine: [docs/AUTOMATED-EMAIL-ENGINE.md](docs/AUTOMATED-EMAIL-ENGINE.md)  
+Campaign manager: [docs/CAMPAIGN-MANAGER.md](docs/CAMPAIGN-MANAGER.md)
 
 Release notes: [docs/RELEASE-v0.1-FOUNDATION.md](docs/RELEASE-v0.1-FOUNDATION.md)
 

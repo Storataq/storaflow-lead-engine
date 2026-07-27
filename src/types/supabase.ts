@@ -962,6 +962,686 @@ export type Database = {
         >;
         Relationships: [];
       };
+      email_campaigns: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          description: string | null;
+          status: string;
+          audience_id: string | null;
+          sequence_id: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+          campaign_type: string;
+          objective: string | null;
+          language: string;
+          template_id: string | null;
+          template_version_id: string | null;
+          template_subject_snapshot: string | null;
+          template_preview_snapshot: string | null;
+          template_html_snapshot: string | null;
+          template_text_snapshot: string | null;
+          template_variables_snapshot: string[];
+          sender_profile_id: string | null;
+          owner_user_id: string | null;
+          approved_by: string | null;
+          approved_at: string | null;
+          archived_at: string | null;
+          notes: string | null;
+          settings_json: Json;
+          audience_definition_json: Json;
+          recipient_count: number;
+          valid_recipient_count: number;
+          excluded_recipient_count: number;
+          readiness_score: number;
+          readiness_classification: string;
+          locked: boolean;
+          sequence_version: number | null;
+          sequence_version_id: string | null;
+          sequence_name_snapshot: string | null;
+          sequence_steps_snapshot: Json | null;
+          compliance_ack: boolean;
+          last_validation_json: Json;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          description?: string | null;
+          status?: string;
+          audience_id?: string | null;
+          sequence_id?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          campaign_type?: string;
+          objective?: string | null;
+          language?: string;
+          template_id?: string | null;
+          template_version_id?: string | null;
+          template_subject_snapshot?: string | null;
+          template_preview_snapshot?: string | null;
+          template_html_snapshot?: string | null;
+          template_text_snapshot?: string | null;
+          template_variables_snapshot?: string[];
+          sender_profile_id?: string | null;
+          owner_user_id?: string | null;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          archived_at?: string | null;
+          notes?: string | null;
+          settings_json?: Json;
+          audience_definition_json?: Json;
+          recipient_count?: number;
+          valid_recipient_count?: number;
+          excluded_recipient_count?: number;
+          readiness_score?: number;
+          readiness_classification?: string;
+          locked?: boolean;
+          sequence_version?: number | null;
+          sequence_version_id?: string | null;
+          sequence_name_snapshot?: string | null;
+          sequence_steps_snapshot?: Json | null;
+          compliance_ack?: boolean;
+          last_validation_json?: Json;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_campaigns"]["Insert"]>;
+        Relationships: [];
+      };
+      email_sender_profiles: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          sender_name: string;
+          sender_email: string;
+          reply_to_name: string | null;
+          reply_to_email: string | null;
+          status: string;
+          provider_reference: string | null;
+          domain_verification_status: string;
+          is_default: boolean;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          sender_name?: string;
+          sender_email?: string;
+          reply_to_name?: string | null;
+          reply_to_email?: string | null;
+          status?: string;
+          provider_reference?: string | null;
+          domain_verification_status?: string;
+          is_default?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["email_sender_profiles"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      email_campaign_approvals: {
+        Row: {
+          id: string;
+          organization_id: string;
+          campaign_id: string;
+          status: string;
+          reviewer_user_id: string | null;
+          reviewed_at: string | null;
+          decision: string | null;
+          reason: string | null;
+          notes: string | null;
+          validation_snapshot: Json;
+          recipient_count_snapshot: number;
+          template_version_id: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          campaign_id: string;
+          status?: string;
+          reviewer_user_id?: string | null;
+          reviewed_at?: string | null;
+          decision?: string | null;
+          reason?: string | null;
+          notes?: string | null;
+          validation_snapshot?: Json;
+          recipient_count_snapshot?: number;
+          template_version_id?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["email_campaign_approvals"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      email_campaign_validations: {
+        Row: {
+          id: string;
+          organization_id: string;
+          campaign_id: string;
+          readiness_score: number;
+          classification: string;
+          blocking_count: number;
+          warning_count: number;
+          info_count: number;
+          issues_json: Json;
+          summary_json: Json;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          campaign_id: string;
+          readiness_score?: number;
+          classification?: string;
+          blocking_count?: number;
+          warning_count?: number;
+          info_count?: number;
+          issues_json?: Json;
+          summary_json?: Json;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["email_campaign_validations"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      email_campaign_activities: {
+        Row: {
+          id: string;
+          organization_id: string;
+          campaign_id: string;
+          event_type: string;
+          description: string;
+          metadata_json: Json;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          campaign_id: string;
+          event_type: string;
+          description: string;
+          metadata_json?: Json;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["email_campaign_activities"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      email_sequences: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          description: string | null;
+          status: string;
+          version: number;
+          steps_json: Json;
+          category: string;
+          default_language: string;
+          campaign_type_compatibility: string[];
+          created_by: string | null;
+          updated_by: string | null;
+          archived_at: string | null;
+          current_version_id: string | null;
+          readiness_score: number;
+          readiness_classification: string;
+          stop_rules_json: Json;
+          safety_limits_json: Json;
+          settings_json: Json;
+          last_validation_json: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          description?: string | null;
+          status?: string;
+          version?: number;
+          steps_json?: Json;
+          category?: string;
+          default_language?: string;
+          campaign_type_compatibility?: string[];
+          created_by?: string | null;
+          updated_by?: string | null;
+          archived_at?: string | null;
+          current_version_id?: string | null;
+          readiness_score?: number;
+          readiness_classification?: string;
+          stop_rules_json?: Json;
+          safety_limits_json?: Json;
+          settings_json?: Json;
+          last_validation_json?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_sequences"]["Insert"]>;
+        Relationships: [];
+      };
+      email_sequence_versions: {
+        Row: {
+          id: string;
+          organization_id: string;
+          sequence_id: string;
+          version_number: number;
+          status: string;
+          name: string;
+          description: string | null;
+          category: string;
+          default_language: string;
+          steps_json: Json;
+          stop_rules_json: Json;
+          safety_limits_json: Json;
+          change_notes: string | null;
+          is_current: boolean;
+          published_at: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          sequence_id: string;
+          version_number: number;
+          status?: string;
+          name: string;
+          description?: string | null;
+          category?: string;
+          default_language?: string;
+          steps_json?: Json;
+          stop_rules_json?: Json;
+          safety_limits_json?: Json;
+          change_notes?: string | null;
+          is_current?: boolean;
+          published_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["email_sequence_versions"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      email_sequence_validations: {
+        Row: {
+          id: string;
+          organization_id: string;
+          sequence_id: string;
+          version_number: number | null;
+          readiness_score: number;
+          classification: string;
+          blocking_count: number;
+          warning_count: number;
+          info_count: number;
+          issues_json: Json;
+          summary_json: Json;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          sequence_id: string;
+          version_number?: number | null;
+          readiness_score?: number;
+          classification?: string;
+          blocking_count?: number;
+          warning_count?: number;
+          info_count?: number;
+          issues_json?: Json;
+          summary_json?: Json;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["email_sequence_validations"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      email_sequence_activities: {
+        Row: {
+          id: string;
+          organization_id: string;
+          sequence_id: string;
+          event_type: string;
+          description: string;
+          metadata_json: Json;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          sequence_id: string;
+          event_type: string;
+          description: string;
+          metadata_json?: Json;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["email_sequence_activities"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      email_templates: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          description: string | null;
+          subject: string;
+          preview_text: string | null;
+          html_body: string;
+          text_body: string | null;
+          variables: string[];
+          language: string;
+          category: string | null;
+          version: number;
+          status: string;
+          created_by: string | null;
+          archived_at: string | null;
+          tags: string[];
+          folder_id: string | null;
+          is_library_placeholder: boolean;
+          fallbacks_json: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          description?: string | null;
+          subject?: string;
+          preview_text?: string | null;
+          html_body?: string;
+          text_body?: string | null;
+          variables?: string[];
+          language?: string;
+          category?: string | null;
+          version?: number;
+          status?: string;
+          created_by?: string | null;
+          archived_at?: string | null;
+          tags?: string[];
+          folder_id?: string | null;
+          is_library_placeholder?: boolean;
+          fallbacks_json?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_templates"]["Insert"]>;
+        Relationships: [];
+      };
+      email_template_folders: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          slug: string;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          slug: string;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["email_template_folders"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      email_template_versions: {
+        Row: {
+          id: string;
+          organization_id: string;
+          template_id: string;
+          version_number: number;
+          name: string;
+          subject: string;
+          preview_text: string | null;
+          html_body: string;
+          text_body: string | null;
+          variables: string[];
+          change_notes: string | null;
+          is_current: boolean;
+          previous_version_number: number | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          template_id: string;
+          version_number: number;
+          name: string;
+          subject?: string;
+          preview_text?: string | null;
+          html_body?: string;
+          text_body?: string | null;
+          variables?: string[];
+          change_notes?: string | null;
+          is_current?: boolean;
+          previous_version_number?: number | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["email_template_versions"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      email_audiences: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          description: string | null;
+          filter_json: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          description?: string | null;
+          filter_json?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_audiences"]["Insert"]>;
+        Relationships: [];
+      };
+      email_recipients: {
+        Row: {
+          id: string;
+          organization_id: string;
+          campaign_id: string | null;
+          company_id: string | null;
+          lead_id: string | null;
+          contact_id: string | null;
+          preferred_email: string;
+          preferred_name: string | null;
+          language: string | null;
+          campaign_status: string;
+          sequence_status: string;
+          suppression_status: string;
+          validation_status: string;
+          personalization_json: Json;
+          created_at: string;
+          updated_at: string;
+          is_snapshot: boolean;
+          eligibility_status: string;
+          exclusion_reason: string | null;
+          company_name: string | null;
+          owner_user_id: string | null;
+          qualification_score: number | null;
+          opportunity_score: number | null;
+          priority: string | null;
+          source: string | null;
+          snapshot_at: string | null;
+          duplicate_of_recipient_id: string | null;
+          personalization_status: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          campaign_id?: string | null;
+          company_id?: string | null;
+          lead_id?: string | null;
+          contact_id?: string | null;
+          preferred_email: string;
+          preferred_name?: string | null;
+          language?: string | null;
+          campaign_status?: string;
+          sequence_status?: string;
+          suppression_status?: string;
+          validation_status?: string;
+          personalization_json?: Json;
+          created_at?: string;
+          updated_at?: string;
+          is_snapshot?: boolean;
+          eligibility_status?: string;
+          exclusion_reason?: string | null;
+          company_name?: string | null;
+          owner_user_id?: string | null;
+          qualification_score?: number | null;
+          opportunity_score?: number | null;
+          priority?: string | null;
+          source?: string | null;
+          snapshot_at?: string | null;
+          duplicate_of_recipient_id?: string | null;
+          personalization_status?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_recipients"]["Insert"]>;
+        Relationships: [];
+      };
+      email_queue: {
+        Row: {
+          id: string;
+          organization_id: string;
+          campaign_id: string | null;
+          recipient_id: string;
+          sequence_id: string | null;
+          step_id: string | null;
+          template_id: string | null;
+          status: string;
+          scheduled_at: string | null;
+          provider_code: string;
+          provider_message_id: string | null;
+          attempt_count: number;
+          last_error: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          campaign_id?: string | null;
+          recipient_id: string;
+          sequence_id?: string | null;
+          step_id?: string | null;
+          template_id?: string | null;
+          status?: string;
+          scheduled_at?: string | null;
+          provider_code?: string;
+          provider_message_id?: string | null;
+          attempt_count?: number;
+          last_error?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_queue"]["Insert"]>;
+        Relationships: [];
+      };
+      email_suppressions: {
+        Row: {
+          id: string;
+          organization_id: string;
+          email_normalized: string;
+          status: string;
+          reason: string;
+          source: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          email_normalized: string;
+          status?: string;
+          reason?: string;
+          source?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["email_suppressions"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      email_events: {
+        Row: {
+          id: string;
+          organization_id: string;
+          queue_item_id: string | null;
+          recipient_id: string | null;
+          campaign_id: string | null;
+          event_type: string;
+          bounce_type: string | null;
+          payload_json: Json;
+          occurred_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          queue_item_id?: string | null;
+          recipient_id?: string | null;
+          campaign_id?: string | null;
+          event_type: string;
+          bounce_type?: string | null;
+          payload_json?: Json;
+          occurred_at?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_events"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

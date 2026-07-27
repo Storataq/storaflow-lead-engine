@@ -1,40 +1,29 @@
 /**
- * Future Automated Email Engine — type placeholders only (Phase 20D+).
- * No sending, no provider SDK, no migrations in Foundation.
+ * Compatibility shim for Phase 20D imports.
+ * Canonical types live in `@/lib/email/types`.
  */
 
-export type EmailCampaignStatus =
-  | "draft"
-  | "scheduled"
-  | "running"
-  | "paused"
-  | "completed"
-  | "cancelled";
+export type {
+  EmailCampaignStatus,
+  EmailSequenceStepType,
+  EmailQueueStatus as EmailDeliveryStatus,
+} from "@/lib/email/types";
 
-export type EmailSequenceStepType = "email" | "wait" | "condition";
+export {
+  EMAIL_ENGINE_CAPABILITIES as FutureEmailEngineConceptsFlags,
+  EMAIL_ENGINE_COMPLIANCE_NOTICE,
+} from "@/lib/email/types";
 
-export type EmailDeliveryStatus =
-  | "queued"
-  | "scheduled"
-  | "sending"
-  | "delivered"
-  | "bounced"
-  | "failed"
-  | "opened"
-  | "clicked"
-  | "replied"
-  | "unsubscribed";
-
-/** Documented concepts for later implementation — not persisted. */
+/** Documented concepts for later implementation — not executed. */
 export type FutureEmailEngineConcepts = {
-  campaign: EmailCampaignStatus;
-  sequence: EmailSequenceStepType;
+  campaign: import("@/lib/email/types").EmailCampaignStatus;
+  sequence: import("@/lib/email/types").EmailSequenceStepType;
   template: "html" | "text";
   recipient: "lead" | "contact";
   personalization: "merge_fields";
   emailQueue: "org_scoped";
   scheduledSend: "timezone_aware";
-  delivery: EmailDeliveryStatus;
+  delivery: import("@/lib/email/types").EmailQueueStatus;
   bounce: "hard" | "soft";
   reply: "stop_on_reply";
   unsubscribe: "list_unsubscribe";
@@ -49,5 +38,7 @@ export const EMAIL_ENGINE_INTEGRATION_POINTS = [
   "Tasks / notes → human override + audit trail",
   "Executive Dashboard → campaign performance KPIs (later)",
   "Exclusions list → never send",
-  "Funnel stops at outreach-ready — send lives in Email Engine project",
+  "Funnel stops at outreach-ready — send lives in Email Engine later phases",
+  "EmailSendingProvider abstraction → Resend/Postmark/SendGrid/SES/SMTP",
+  "email_suppressions must block queue enrollment automatically",
 ] as const;

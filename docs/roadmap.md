@@ -48,14 +48,23 @@ Related: [ARCHITECTURE.md](./ARCHITECTURE.md), [RELEASE-v0.1-FOUNDATION.md](./RE
 - Docs: [FUNNEL-ACTIVATION.md](./FUNNEL-ACTIVATION.md)
 - **No outbound email**
 
-## Automated Email Engine (later)
+## Automated Email Engine
 
-Concepts prepared in `src/lib/email/future-engine.ts`:
-
-Campaign, Sequence, Template, Recipient, Personalization, Email Queue,
-Scheduled Send, Delivery, Bounce, Reply, Unsubscribe, Stop on Reply, Analytics.
-
-Requires explicit user action to send; exclusions always apply.
+- **21A** Foundation — `20260726000011_…`
+- **21B** Template & personalization — `20260726000012_…`
+- **21C** Campaign Manager — `20260726000013_…`
+- **21D** Sequence Engine — `20260726000014_…`
+- **21E** Queue / Scheduler / Execution — `20260726000015_…`
+- **21F** Provider (Resend) — `20260726000016_…`
+- **21G** Delivery events — `20260726000017_…`
+- **21H** Open / click / reply tracking — `20260726000018_…`
+- **21I** Preferences / suppression — `20260726000019_…`
+- **21J** Analytics intelligence — `20260726000020_…`
+- **21K** AI intelligence (optional, human-reviewed) — `20260726000021_…`
+- **21L** Production hardening / ops — `20260726000022_…`
+- Docs: [AUTOMATED-EMAIL-ENGINE.md](./AUTOMATED-EMAIL-ENGINE.md), [EMAIL-PRODUCTION-READINESS.md](./EMAIL-PRODUCTION-READINESS.md)
+- **Status:** Ready for controlled test mode / limited pilot after manual config — not auto Production Ready
+- **Still later:** deeper CRM linkage, GDPR export/erasure, additional providers, external alerting channels
 
 ## SaaS later
 

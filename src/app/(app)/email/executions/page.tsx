@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { EmailSubnav } from "@/components/email/email-subnav";
 import { PageHeader } from "@/components/layout/page-header";
+import { ReloadErrorAlert } from "@/components/layout/reload-error-alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import {
   listEmailCampaignExecutions,
   listExecutionQueueJobs,
 } from "@/lib/email/execution/queries";
+import { toUserFacingError } from "@/lib/ui/user-facing-error";
 
 export const metadata: Metadata = { title: "Executions" };
 
@@ -29,11 +31,7 @@ export default async function ExecutionsPage() {
   const orgId = context.organization.id;
   const now = new Date().toISOString();
 
-  const [executions, dueJobs] = await Promise.all([
-    listEmailCampaignExecutions({ organizationId: orgId, limit: 50 }),
-    listExecutionQueueJobs({ organizationId: orgId, limit: 200 }),
-  ]);
-
+  let errorMessage: string | null = null;
   type ExecutionRow = {
     id: string;
     status?: string | null;
@@ -41,19 +39,29 @@ export default async function ExecutionsPage() {
     enrolled_count?: number | null;
     started_at?: string | null;
   };
-
-  const executionRows = Array.isArray(executions)
-    ? (executions as ExecutionRow[])
-    : [];
-
   type QueueJobRow = {
     scheduled_for?: string | null;
     status?: string | null;
   };
 
-  const queueJobRows = Array.isArray(dueJobs)
-    ? (dueJobs as QueueJobRow[])
-    : [];
+  let executionRows: ExecutionRow[] = [];
+  let queueJobRows: QueueJobRow[] = [];
+
+  try {
+    const [executions, dueJobs] = await Promise.all([
+      listEmailCampaignExecutions({ organizationId: orgId, limit: 50 }),
+      listExecutionQueueJobs({ organizationId: orgId, limit: 200 }),
+    ]);
+    executionRows = Array.isArray(executions)
+      ? (executions as ExecutionRow[])
+      : [];
+    queueJobRows = Array.isArray(dueJobs) ? (dueJobs as QueueJobRow[]) : [];
+  } catch (error) {
+    errorMessage = toUserFacingError(
+      error,
+      "Kon executions niet laden. Controleer of de execution-migratie is uitgevoerd.",
+    );
+  }
 
   const counts = {
     preparing: executionRows.filter((e) => e.status === "preparing").length,
@@ -75,7 +83,7 @@ export default async function ExecutionsPage() {
     <div>
       <PageHeader
         title="Executions"
-        description="Sequence execution architecture: enrollments, step executions, and internal queue. No external emails are sent."
+        description="Sequence execution architecture: enrollments, step executions, and internal queue. Live provider dispatch remains gated."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Email Engine", href: "/email" },
@@ -84,6 +92,10 @@ export default async function ExecutionsPage() {
       />
       <EmailSubnav currentPath="/email/executions" />
 
+      {errorMessage ? (
+        <ReloadErrorAlert description={errorMessage} />
+      ) : (
+        <>
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="shadow-none">
           <CardHeader className="pb-2">
@@ -135,7 +147,7 @@ export default async function ExecutionsPage() {
             </tr>
           </thead>
           <tbody>
-            {executions.length === 0 ? (
+            {executionRows.length === 0 ? (
               <tr>
                 <td className="p-3 text-muted-foreground" colSpan={5}>
                   No executions yet.
@@ -166,6 +178,8 @@ export default async function ExecutionsPage() {
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </div>
   );
 }

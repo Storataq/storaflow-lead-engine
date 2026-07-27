@@ -278,6 +278,29 @@ export async function persistPipelineResults(
 
       companyId = company.id;
       companiesCreated += 1;
+
+      // Phase 23B — classify newly created companies (non-blocking).
+      const { classifyCompanyInBackground } = await import(
+        "@/lib/companies/classification/background"
+      );
+      await classifyCompanyInBackground({
+        supabase,
+        organizationId: input.organizationId,
+        companyId,
+        source: "search",
+        actorUserId: null,
+        signals: {
+          companyName: item.name,
+          websiteUrl: item.website,
+          industry: item.industry,
+          description: item.description,
+          city: item.city,
+          country: item.countryCode,
+          googleCategories: item.categories ?? null,
+          keywords: item.categories ?? null,
+        },
+        useAi: process.env.OPENAI_API_KEY ? true : false,
+      });
     }
 
     await supabase.from("company_sources").insert({

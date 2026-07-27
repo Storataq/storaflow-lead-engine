@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 
 import { ConvertCompanyToLeadButton } from "@/components/crm/convert-company-to-lead-button";
 import { FunnelActivationPanel } from "@/components/crm/funnel-activation-panel";
+import { CategoryIntelligencePanel } from "@/components/companies/category-intelligence-panel";
+import { CompanyCategoryCard } from "@/components/companies/company-category-card";
 import { WebsiteEnrichmentPanel } from "@/components/companies/website-enrichment-panel";
 import { TruncatedText } from "@/components/layout/truncated-text";
 import { PageHeader } from "@/components/layout/page-header";
@@ -16,6 +18,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  getCompanyCategory,
+  listCompanyCategories,
+} from "@/lib/companies/categories/queries";
+import {
+  getCompanyClassification,
+  listCompanyClassificationHistory,
+} from "@/lib/companies/classification/queries";
 import {
   getCompany,
   listCompanySources,
@@ -77,6 +87,35 @@ export default async function CompanyDetailPage({
     context.organization.id,
     company.id,
   ).catch(() => []);
+
+  const [categories, assignedCategory, classification, classificationHistory] =
+    await Promise.all([
+      listCompanyCategories(context.organization.id).catch(() => []),
+      company.company_category_id
+        ? getCompanyCategory(
+            context.organization.id,
+            company.company_category_id,
+          ).catch(() => null)
+        : Promise.resolve(null),
+      getCompanyClassification(context.organization.id, company.id).catch(
+        () => null,
+      ),
+      listCompanyClassificationHistory(
+        context.organization.id,
+        company.id,
+      ).catch(() => []),
+    ]);
+
+  const suggestedCategory = company.suggested_company_category_id
+    ? await getCompanyCategory(
+        context.organization.id,
+        company.suggested_company_category_id,
+      ).catch(() => null)
+    : null;
+
+  const canAssign =
+    context.membership.role === "owner" ||
+    context.membership.role === "admin";
 
   const enrichmentSource = [...sources]
     .reverse()
@@ -201,6 +240,30 @@ export default async function CompanyDetailPage({
       />
 
       <div className="mb-4 space-y-4">
+        <CompanyCategoryCard
+          companyId={company.id}
+          category={assignedCategory}
+          categories={categories}
+          canAssign={canAssign}
+        />
+        <CategoryIntelligencePanel
+          companyId={company.id}
+          currentCategory={assignedCategory}
+          suggestedCategory={suggestedCategory}
+          classification={classification}
+          history={classificationHistory}
+          categories={categories}
+          manualOverride={Boolean(company.category_manual_override)}
+          needsReview={Boolean(company.category_needs_review)}
+          confidence={
+            company.category_confidence != null
+              ? Number(company.category_confidence)
+              : null
+          }
+          classifiedAt={company.category_classified_at}
+          classifiedBy={company.category_classified_by}
+          canManage={canAssign}
+        />
         <WebsiteEnrichmentPanel
           companyId={company.id}
           websiteUrl={company.website_url}

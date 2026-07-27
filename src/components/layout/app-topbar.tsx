@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { Menu } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { toast } from "sonner";
 
-import { logoutAction } from "@/lib/auth/actions";
+import {
+  logoutAction,
+  setActiveOrganizationAction,
+} from "@/lib/auth/actions";
 import { NAV_ITEMS, APP_NAME } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +36,8 @@ type AppTopbarProps = {
   userEmail: string;
   userName: string | null;
   organizationName: string;
+  organizations?: Array<{ id: string; name: string }>;
+  activeOrganizationId?: string;
 };
 
 function initials(name: string | null, email: string): string {
@@ -50,8 +57,12 @@ export function AppTopbar({
   userEmail,
   userName,
   organizationName,
+  organizations = [],
+  activeOrganizationId,
 }: AppTopbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
 
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur lg:px-6">
@@ -123,45 +134,79 @@ export function AppTopbar({
         <p className="text-sm font-medium tracking-tight">{title}</p>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={<Button variant="ghost" className="gap-2 px-2" />}
-        >
-          <Avatar className="size-7">
-            <AvatarFallback className="text-xs">
-              {initials(userName, userEmail)}
-            </AvatarFallback>
-          </Avatar>
-          <span className="hidden max-w-40 truncate text-sm sm:inline">
-            {userName ?? userEmail}
-          </span>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-medium">
-                {userName ?? "Gebruiker"}
-              </span>
-              <span className="text-xs text-muted-foreground">{userEmail}</span>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            render={<Link href="/settings" />}
-            nativeButton={false}
-          >
-            Instellingen
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => {
-              void logoutAction();
+      <div className="flex items-center gap-2">
+        {organizations.length > 1 ? (
+          <select
+            className="hidden h-8 max-w-[12rem] truncate rounded-lg border border-input bg-transparent px-2 text-sm sm:block"
+            aria-label="Actieve organisatie"
+            disabled={pending}
+            value={activeOrganizationId ?? organizations[0]?.id}
+            onChange={(event) => {
+              const nextId = event.target.value;
+              startTransition(async () => {
+                const result = await setActiveOrganizationAction(nextId);
+                if (result && !result.success) {
+                  toast.error(result.message);
+                  return;
+                }
+                router.refresh();
+              });
             }}
           >
-            Uitloggen
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            {organizations.map((org) => (
+              <option key={org.id} value={org.id}>
+                {org.name}
+              </option>
+            ))}
+          </select>
+        ) : null}
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button variant="ghost" className="gap-2 px-2" />}
+          >
+            <Avatar className="size-7">
+              <AvatarFallback className="text-xs">
+                {initials(userName, userEmail)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="hidden max-w-40 truncate text-sm sm:inline">
+              {userName ?? userEmail}
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium">
+                  {userName ?? "Gebruiker"}
+                </span>
+                <span className="text-xs text-muted-foreground">{userEmail}</span>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              render={<Link href="/settings" />}
+              nativeButton={false}
+            >
+              Instellingen
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              render={<Link href="/settings/ai" />}
+              nativeButton={false}
+            >
+              AI-instellingen
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => {
+                void logoutAction();
+              }}
+            >
+              Uitloggen
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }

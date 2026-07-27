@@ -3,8 +3,13 @@ import type { Metadata } from "next";
 import { EmailSubnav } from "@/components/email/email-subnav";
 import { SuppressionsManager } from "@/components/email/suppressions-manager";
 import { PageHeader } from "@/components/layout/page-header";
-import { listSuppressions } from "@/lib/email/preferences/queries";
+import { ReloadErrorAlert } from "@/components/layout/reload-error-alert";
+import {
+  listSuppressions,
+  type SuppressionListRow,
+} from "@/lib/email/preferences/queries";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
+import { toUserFacingError } from "@/lib/ui/user-facing-error";
 
 export const metadata: Metadata = { title: "Email Suppression" };
 
@@ -17,11 +22,21 @@ export default async function EmailSuppressionPage({
   if (!context) return null;
   const sp = await searchParams;
 
-  const rows = await listSuppressions(context.organization.id, {
-    reason: sp.reason,
-    q: sp.q,
-    active: true,
-  });
+  let errorMessage: string | null = null;
+  let rows: SuppressionListRow[] = [];
+
+  try {
+    rows = await listSuppressions(context.organization.id, {
+      reason: sp.reason,
+      q: sp.q,
+      active: true,
+    });
+  } catch (error) {
+    errorMessage = toUserFacingError(
+      error,
+      "Kon suppressions niet laden. Controleer of de preferences-migratie is uitgevoerd.",
+    );
+  }
 
   const canManage =
     context.membership.role === "owner" ||
@@ -39,34 +54,40 @@ export default async function EmailSuppressionPage({
         ]}
       />
       <EmailSubnav currentPath="/email/suppression" />
-      <form className="mb-4 flex flex-wrap gap-2">
-        <input
-          name="q"
-          defaultValue={sp.q ?? ""}
-          placeholder="Search email"
-          className="h-10 rounded-md border bg-background px-3 text-sm"
-        />
-        <select
-          name="reason"
-          defaultValue={sp.reason ?? ""}
-          className="h-10 rounded-md border bg-background px-3 text-sm"
-        >
-          <option value="">All reasons</option>
-          <option value="unsubscribed">Unsubscribed</option>
-          <option value="complaint">Complaint</option>
-          <option value="bounce_hard">Hard bounce</option>
-          <option value="manual">Manual</option>
-          <option value="do_not_contact">Do not contact</option>
-          <option value="legal_restriction">Legal</option>
-        </select>
-        <button
-          type="submit"
-          className="h-10 rounded-md border px-4 text-sm hover:bg-muted"
-        >
-          Filter
-        </button>
-      </form>
-      <SuppressionsManager rows={rows} canManage={canManage} />
+      {errorMessage ? (
+        <ReloadErrorAlert description={errorMessage} />
+      ) : (
+        <>
+          <form className="mb-4 flex flex-wrap gap-2">
+            <input
+              name="q"
+              defaultValue={sp.q ?? ""}
+              placeholder="Search email"
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+            />
+            <select
+              name="reason"
+              defaultValue={sp.reason ?? ""}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">All reasons</option>
+              <option value="unsubscribed">Unsubscribed</option>
+              <option value="complaint">Complaint</option>
+              <option value="bounce_hard">Hard bounce</option>
+              <option value="manual">Manual</option>
+              <option value="do_not_contact">Do not contact</option>
+              <option value="legal_restriction">Legal</option>
+            </select>
+            <button
+              type="submit"
+              className="h-10 rounded-md border px-4 text-sm hover:bg-muted"
+            >
+              Filter
+            </button>
+          </form>
+          <SuppressionsManager rows={rows} canManage={canManage} />
+        </>
+      )}
     </div>
   );
 }

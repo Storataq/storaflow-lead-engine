@@ -326,6 +326,13 @@ export type Database = {
           normalized_domain: string | null;
           description: string | null;
           industry: string | null;
+          company_category_id: string | null;
+          category_manual_override: boolean;
+          category_needs_review: boolean;
+          category_confidence: number | null;
+          suggested_company_category_id: string | null;
+          category_classified_at: string | null;
+          category_classified_by: string | null;
           city: string | null;
           region: string | null;
           country: string | null;
@@ -352,6 +359,13 @@ export type Database = {
           normalized_domain?: string | null;
           description?: string | null;
           industry?: string | null;
+          company_category_id?: string | null;
+          category_manual_override?: boolean;
+          category_needs_review?: boolean;
+          category_confidence?: number | null;
+          suggested_company_category_id?: string | null;
+          category_classified_at?: string | null;
+          category_classified_by?: string | null;
           city?: string | null;
           region?: string | null;
           country?: string | null;
@@ -370,6 +384,164 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["companies"]["Insert"]>;
+        Relationships: [];
+      };
+      company_categories: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          slug: string;
+          description: string | null;
+          icon: string | null;
+          color: string | null;
+          sort_order: number;
+          is_active: boolean;
+          is_system_default: boolean;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          slug: string;
+          description?: string | null;
+          icon?: string | null;
+          color?: string | null;
+          sort_order?: number;
+          is_active?: boolean;
+          is_system_default?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["company_categories"]["Insert"]>;
+        Relationships: [];
+      };
+      company_category_classifications: {
+        Row: {
+          id: string;
+          organization_id: string;
+          company_id: string;
+          suggested_category_id: string | null;
+          applied_category_id: string | null;
+          confidence: number;
+          confidence_band: string;
+          reason: string | null;
+          keywords_json: Json;
+          alternatives_json: Json;
+          input_summary_json: Json;
+          source: string;
+          classified_by: string;
+          provider: string | null;
+          model: string | null;
+          actor_user_id: string | null;
+          manual_override: boolean;
+          needs_review: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          company_id: string;
+          suggested_category_id?: string | null;
+          applied_category_id?: string | null;
+          confidence?: number;
+          confidence_band?: string;
+          reason?: string | null;
+          keywords_json?: Json;
+          alternatives_json?: Json;
+          input_summary_json?: Json;
+          source?: string;
+          classified_by?: string;
+          provider?: string | null;
+          model?: string | null;
+          actor_user_id?: string | null;
+          manual_override?: boolean;
+          needs_review?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["company_category_classifications"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      company_category_classification_history: {
+        Row: {
+          id: string;
+          organization_id: string;
+          company_id: string;
+          classification_id: string | null;
+          old_category_id: string | null;
+          new_category_id: string | null;
+          suggested_category_id: string | null;
+          confidence: number | null;
+          reason: string | null;
+          event_type: string;
+          is_automatic: boolean;
+          actor_user_id: string | null;
+          metadata_json: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          company_id: string;
+          classification_id?: string | null;
+          old_category_id?: string | null;
+          new_category_id?: string | null;
+          suggested_category_id?: string | null;
+          confidence?: number | null;
+          reason?: string | null;
+          event_type: string;
+          is_automatic?: boolean;
+          actor_user_id?: string | null;
+          metadata_json?: Json;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["company_category_classification_history"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      company_category_action_runs: {
+        Row: {
+          id: string;
+          organization_id: string;
+          company_category_id: string;
+          action_type: string;
+          status: string;
+          company_ids: Json;
+          company_count: number;
+          result_summary: Json;
+          error_message: string | null;
+          actor_user_id: string | null;
+          confirmed: boolean;
+          created_at: string;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          company_category_id: string;
+          action_type: string;
+          status?: string;
+          company_ids?: Json;
+          company_count?: number;
+          result_summary?: Json;
+          error_message?: string | null;
+          actor_user_id?: string | null;
+          confirmed?: boolean;
+          created_at?: string;
+          completed_at?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["company_category_action_runs"]["Insert"]
+        >;
         Relationships: [];
       };
       contacts: {
@@ -869,6 +1041,7 @@ export type Database = {
           created_by: string | null;
           created_at: string;
           updated_at: string;
+          source_company_category_id: string | null;
         };
         Insert: {
           id?: string;
@@ -889,6 +1062,7 @@ export type Database = {
           completed_at?: string | null;
           created_by?: string | null;
           created_at?: string;
+          source_company_category_id?: string | null;
           updated_at?: string;
         };
         Update: Partial<

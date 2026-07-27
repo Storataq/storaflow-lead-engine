@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { Users } from "lucide-react";
 
-import { EmailModulePlaceholder } from "@/components/email/email-module-placeholder";
 import { EmailSubnav } from "@/components/email/email-subnav";
+import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 
@@ -15,7 +16,7 @@ export default async function EmailRecipientsPage() {
     <div>
       <PageHeader
         title="Recipients"
-        description="Enrollment from Campaign Ready — gate helpers only, no enrollment writes yet."
+        description="Recipient enrollment and status live under Enrollments. Use Campaign Ready to prepare CRM leads."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Email Engine", href: "/email" },
@@ -23,14 +24,14 @@ export default async function EmailRecipientsPage() {
         ]}
       />
       <EmailSubnav currentPath="/email/recipients" />
-      <EmailModulePlaceholder
-        title="Recipient Engine"
-        description="Uses Phase 20D campaign readiness previews. Suppression must block enrollment."
-        upcoming={[
-          "Import approved Campaign Ready leads",
-          "Preferred email / name resolution",
-          "Per-recipient sequence status",
-        ]}
+      <EmptyState
+        icon={Users}
+        title="No dedicated recipients inbox yet"
+        description="Enrollment status is available under Enrollments. Prepare CRM leads via Campaign Ready, then start an execution from Campaigns."
+        actionLabel="Open enrollments"
+        actionHref="/email/enrollments"
+        secondaryActionLabel="Campaign Ready"
+        secondaryActionHref="/crm/campaign-ready"
       />
     </div>
   );

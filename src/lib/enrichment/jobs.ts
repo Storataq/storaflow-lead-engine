@@ -295,6 +295,42 @@ export async function executeWebsiteEnrichmentJob(
       result,
     });
 
+    // Phase 23B — reclassify after enrichment with page text signals.
+    const aboutPage = result.pages.find((p) => p.pageType === "about");
+    const homePage = result.pages.find((p) => p.pageType === "homepage");
+    const { data: companyRow } = await supabase
+      .from("companies")
+      .select("company_name, website_url, industry, description, city, country")
+      .eq("organization_id", organizationId)
+      .eq("id", companyId)
+      .maybeSingle();
+
+    const { classifyCompanyInBackground } = await import(
+      "@/lib/companies/classification/background"
+    );
+    await classifyCompanyInBackground({
+      supabase,
+      organizationId,
+      companyId,
+      source: "enrichment",
+      actorUserId: userId,
+      signals: {
+        companyName: companyRow?.company_name ?? null,
+        websiteUrl:
+          companyRow?.website_url ?? result.website.normalized ?? null,
+        websiteTitle: homePage?.title ?? aboutPage?.title ?? null,
+        metaDescription:
+          homePage?.metaDescription ?? aboutPage?.metaDescription ?? null,
+        aboutText: aboutPage?.text ?? null,
+        homepageText: homePage?.text ?? null,
+        industry: companyRow?.industry ?? null,
+        description: companyRow?.description ?? null,
+        city: companyRow?.city ?? null,
+        country: companyRow?.country ?? null,
+      },
+      useAi: Boolean(process.env.OPENAI_API_KEY),
+    });
+
     await supabase
       .from("scrape_jobs")
       .update({

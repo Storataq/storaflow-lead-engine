@@ -272,14 +272,19 @@ export function PipelineBoard({
     );
 
     startTransition(() => {
-      void moveLeadStageAction(leadId, overStage.id).then((result) => {
-        if (!result.success) {
-          toast.error(result.message);
+      void moveLeadStageAction(leadId, overStage.id)
+        .then((result) => {
+          if (!result.success) {
+            toast.error(result.message);
+            setItems(leads);
+            return;
+          }
+          toast.success(result.message);
+        })
+        .catch(() => {
+          toast.error("Stage wijzigen mislukt. Probeer opnieuw.");
           setItems(leads);
-          return;
-        }
-        toast.success(result.message);
-      });
+        });
     });
   }
 
@@ -291,6 +296,18 @@ export function PipelineBoard({
         description="Er is nog geen CRM-pipeline beschikbaar voor deze organisatie. Controleer of de CRM-migratie is uitgevoerd."
         actionLabel="Naar leads"
         actionHref="/crm/leads"
+      />
+    );
+  }
+
+  if (pipelineStages.length === 0) {
+    return (
+      <EmptyState
+        icon={Kanban}
+        title="Nog geen stages"
+        description="Deze pipeline heeft nog geen stages. Voeg stages toe via funnels of pipeline-beheer om het bord te gebruiken."
+        actionLabel="Stages beheren"
+        actionHref="/crm/funnels"
       />
     );
   }

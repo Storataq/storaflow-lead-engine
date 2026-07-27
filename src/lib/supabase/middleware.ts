@@ -10,9 +10,24 @@ export async function updateSession(request: NextRequest) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const pathname = request.nextUrl.pathname;
+  const isAuthRoute =
+    pathname.startsWith("/login") || pathname.startsWith("/auth");
+  const isPublicAsset =
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon") ||
+    pathname.includes(".");
 
+  // Fail closed: never skip auth when Supabase env is missing.
   if (!url || !publishableKey) {
-    return supabaseResponse;
+    if (isAuthRoute || isPublicAsset) {
+      return supabaseResponse;
+    }
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/login";
+    redirectUrl.searchParams.set("next", pathname);
+    redirectUrl.searchParams.set("config", "missing");
+    return NextResponse.redirect(redirectUrl);
   }
 
   // Middleware gebruikt alleen de publishable key (geen service role).
@@ -38,14 +53,6 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const pathname = request.nextUrl.pathname;
-  const isAuthRoute =
-    pathname.startsWith("/login") || pathname.startsWith("/auth");
-  const isPublicAsset =
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon") ||
-    pathname.includes(".");
 
   // Phase 21L — public email surfaces must not require a session.
   const isPublicEmailRoute =

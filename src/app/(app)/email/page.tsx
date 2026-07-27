@@ -32,7 +32,7 @@ export default async function EmailOverviewPage() {
     <div>
       <PageHeader
         title="Automated Email Engine"
-        description={`Native Storaflow module — phase: ${EMAIL_ENGINE_PHASE}. No emails are sent yet.`}
+        description={`Native Storaflow module — phase: ${EMAIL_ENGINE_PHASE}. Live sending is gated by env, org controls, and allowlists.`}
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Email Engine" },
@@ -96,11 +96,11 @@ export default async function EmailOverviewPage() {
 
         <EmailModulePlaceholder
           title="Module map"
-          description="Templates, Campaign Manager and Sequence Engine are live. Queue and providers remain placeholders."
+          description="Templates, campaigns, sequences, queue, tracking, preferences, analytics, AI assist, and operations are available. Live dispatch remains gated."
           upcoming={[
-            "Audience enrollment workers (21E)",
-            "Provider configuration",
-            "Queue workers + delivery webhooks",
+            "Broader recipient inbox UX",
+            "Additional provider adapters",
+            "Deeper CRM auto-sync (manual review first)",
           ]}
         />
       </div>

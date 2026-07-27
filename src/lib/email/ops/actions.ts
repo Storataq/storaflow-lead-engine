@@ -14,11 +14,21 @@ function canOperate(role: string) {
   return role === "owner" || role === "admin";
 }
 
-export async function activateEmergencyStopAction(formData: FormData) {
+async function requireOpsContext() {
   const context = await getActiveOrganization();
-  if (!context) return;
-  if (!canOperate(context.membership.role)) return;
+  if (!context) {
+    throw new Error("Geen actieve organisatie.");
+  }
+  if (!canOperate(context.membership.role)) {
+    throw new Error("Alleen owners of admins mogen deze actie uitvoeren.");
+  }
+  return context;
+}
 
+export async function activateEmergencyStopAction(
+  formData: FormData,
+): Promise<void> {
+  const context = await requireOpsContext();
   const reason = String(formData.get("reason") || "Manual emergency stop");
   await setEmergencyStop({
     organizationId: context.organization.id,
@@ -29,11 +39,8 @@ export async function activateEmergencyStopAction(formData: FormData) {
   revalidatePath("/email/operations");
 }
 
-export async function clearEmergencyStopAction() {
-  const context = await getActiveOrganization();
-  if (!context) return;
-  if (!canOperate(context.membership.role)) return;
-
+export async function clearEmergencyStopAction(): Promise<void> {
+  const context = await requireOpsContext();
   await setEmergencyStop({
     organizationId: context.organization.id,
     actorUserId: context.membership.user_id,
@@ -43,11 +50,10 @@ export async function clearEmergencyStopAction() {
   revalidatePath("/email/operations");
 }
 
-export async function toggleProviderDispatchAction(formData: FormData) {
-  const context = await getActiveOrganization();
-  if (!context) return;
-  if (!canOperate(context.membership.role)) return;
-
+export async function toggleProviderDispatchAction(
+  formData: FormData,
+): Promise<void> {
+  const context = await requireOpsContext();
   const enabled = formData.get("enabled") === "true";
   await ensureEmergencyControls(context.organization.id);
   /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -62,11 +68,8 @@ export async function toggleProviderDispatchAction(formData: FormData) {
   revalidatePath("/email/operations");
 }
 
-export async function runReconciliationDryRunAction() {
-  const context = await getActiveOrganization();
-  if (!context) return;
-  if (!canOperate(context.membership.role)) return;
-
+export async function runReconciliationDryRunAction(): Promise<void> {
+  const context = await requireOpsContext();
   await runQueueReconciliation({
     organizationId: context.organization.id,
     userId: context.membership.user_id,
@@ -75,13 +78,14 @@ export async function runReconciliationDryRunAction() {
   revalidatePath("/email/operations");
 }
 
-export async function acknowledgeIncidentAction(formData: FormData) {
-  const context = await getActiveOrganization();
-  if (!context) return;
-  if (!canOperate(context.membership.role)) return;
-
+export async function acknowledgeIncidentAction(
+  formData: FormData,
+): Promise<void> {
+  const context = await requireOpsContext();
   const incidentId = String(formData.get("incidentId") || "");
-  if (!incidentId) return;
+  if (!incidentId) {
+    throw new Error("Incident id ontbreekt.");
+  }
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const supabase = createServiceClient() as any;
@@ -98,14 +102,13 @@ export async function acknowledgeIncidentAction(formData: FormData) {
   revalidatePath("/email/operations");
 }
 
-export async function resolveIncidentAction(formData: FormData) {
-  const context = await getActiveOrganization();
-  if (!context) return;
-  if (!canOperate(context.membership.role)) return;
-
+export async function resolveIncidentAction(formData: FormData): Promise<void> {
+  const context = await requireOpsContext();
   const incidentId = String(formData.get("incidentId") || "");
   const notes = String(formData.get("notes") || "");
-  if (!incidentId) return;
+  if (!incidentId) {
+    throw new Error("Incident id ontbreekt.");
+  }
 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const supabase = createServiceClient() as any;
@@ -123,11 +126,8 @@ export async function resolveIncidentAction(formData: FormData) {
   revalidatePath("/email/operations");
 }
 
-export async function runE2EHarnessAction() {
-  const context = await getActiveOrganization();
-  if (!context) return;
-  if (!canOperate(context.membership.role)) return;
-
+export async function runE2EHarnessAction(): Promise<void> {
+  const context = await requireOpsContext();
   const { runEmailE2EHarness } = await import("@/lib/email/ops/e2e-harness");
   await runEmailE2EHarness({
     organizationId: context.organization.id,
@@ -136,11 +136,10 @@ export async function runE2EHarnessAction() {
   revalidatePath("/email/operations");
 }
 
-export async function updateTestAllowlistAction(formData: FormData) {
-  const context = await getActiveOrganization();
-  if (!context) return;
-  if (!canOperate(context.membership.role)) return;
-
+export async function updateTestAllowlistAction(
+  formData: FormData,
+): Promise<void> {
+  const context = await requireOpsContext();
   const raw = String(formData.get("allowlist") || "");
   const list = raw
     .split(/[\n,;]+/)
@@ -160,4 +159,3 @@ export async function updateTestAllowlistAction(formData: FormData) {
 
   revalidatePath("/email/operations");
 }
-

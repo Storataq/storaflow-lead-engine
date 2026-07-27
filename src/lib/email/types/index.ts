@@ -296,7 +296,7 @@ export type EmailAnalyticsSnapshot = {
   calculatedAt: string;
 };
 
-export const EMAIL_ENGINE_PHASE = "sequence-engine" as const;
+export const EMAIL_ENGINE_PHASE = "controlled-dispatch" as const;
 
 export const EMAIL_ENGINE_CAPABILITIES = {
   sending: true,
@@ -311,4 +311,4 @@ export const EMAIL_ENGINE_CAPABILITIES = {
 } as const;
 
 export const EMAIL_ENGINE_COMPLIANCE_NOTICE =
-  "The Automated Email Engine foundation does not send messages. Campaign Ready and technical validation are not marketing consent. Users remain responsible for privacy and anti-spam compliance.";
+  "Live sending is gated by environment flags, organization controls, and allowlists. Campaign Ready is technical validation, not marketing consent. Users remain responsible for privacy and anti-spam compliance.";

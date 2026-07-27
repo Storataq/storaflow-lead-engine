@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 
 import { CompaniesManager } from "@/components/companies/companies-manager";
 import { PageHeader } from "@/components/layout/page-header";
 import { PageSkeleton } from "@/components/layout/page-skeleton";
+import { Button } from "@/components/ui/button";
+import { listCompanyCategories } from "@/lib/companies/categories/queries";
 import { listCompanies } from "@/lib/companies/queries";
 import type { CompanyRow } from "@/lib/companies/queries";
+import type { CompanyCategoryRow } from "@/lib/companies/categories/types";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 import { toUserFacingError } from "@/lib/ui/user-facing-error";
 
@@ -20,10 +24,14 @@ async function CompaniesContent() {
   }
 
   let items: CompanyRow[] = [];
+  let categories: CompanyCategoryRow[] = [];
   let errorMessage: string | null = null;
 
   try {
-    items = await listCompanies(context.organization.id);
+    [items, categories] = await Promise.all([
+      listCompanies(context.organization.id),
+      listCompanyCategories(context.organization.id),
+    ]);
   } catch (error) {
     errorMessage = toUserFacingError(
       error,
@@ -31,8 +39,17 @@ async function CompaniesContent() {
     );
   }
 
+  const canAssign =
+    context.membership.role === "owner" ||
+    context.membership.role === "admin";
+
   return (
-    <CompaniesManager initialItems={items} initialError={errorMessage} />
+    <CompaniesManager
+      initialItems={items}
+      categories={categories}
+      canAssign={canAssign}
+      initialError={errorMessage}
+    />
   );
 }
 
@@ -41,11 +58,20 @@ export default function CompaniesPage() {
     <div>
       <PageHeader
         title="Bedrijven"
-        description="Overzicht van gevonden bedrijven met status, bron en locatie."
+        description="Overzicht van gevonden bedrijven met status, categorie, bron en locatie."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Bedrijven" },
         ]}
+        actions={
+          <Button
+            nativeButton={false}
+            variant="outline"
+            render={<Link href="/companies/categories" />}
+          >
+            Categories
+          </Button>
+        }
       />
       <Suspense fallback={<PageSkeleton filters={2} variant="table" />}>
         <CompaniesContent />

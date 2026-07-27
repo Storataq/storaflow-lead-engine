@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import {
+  ACTIVE_ORGANIZATION_COOKIE,
   getActiveOrganization,
   requireUser,
   slugifyOrganizationName,
 } from "@/lib/organizations/get-active-organization";
+import { ensureDefaultCompanyCategories } from "@/lib/companies/categories/bootstrap";
 import { createClient } from "@/lib/supabase/server";
 
 const loginSchema = z.object({
@@ -133,6 +135,10 @@ export async function createOrganizationAction(
     };
   }
 
+  await ensureDefaultCompanyCategories(supabase, organization.id, user.id).catch(
+    () => undefined,
+  );
+
   await supabase.from("activity_events").insert({
     organization_id: organization.id,
     user_id: user.id,
@@ -140,6 +146,38 @@ export async function createOrganizationAction(
     entity_type: "organization",
     entity_id: organization.id,
     description: `Organisatie “${organization.name}” aangemaakt`,
+  });
+
+  redirect("/dashboard");
+}
+
+export async function setActiveOrganizationAction(
+  organizationId: string,
+): Promise<ActionResult> {
+  const { supabase, user } = await requireUser();
+
+  const { data: membership, error } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .eq("organization_id", organizationId)
+    .maybeSingle();
+
+  if (error || !membership) {
+    return {
+      success: false,
+      message: "Je hebt geen toegang tot deze organisatie.",
+    };
+  }
+
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  cookieStore.set(ACTIVE_ORGANIZATION_COOKIE, organizationId, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 365,
   });
 
   redirect("/dashboard");

@@ -239,14 +239,19 @@ export function LeadsKanban({ stages, leads }: LeadsKanbanProps) {
     );
 
     startTransition(() => {
-      void moveLeadStageAction(leadId, overStage.id).then((result) => {
-        if (!result.success) {
-          toast.error(result.message);
+      void moveLeadStageAction(leadId, overStage.id)
+        .then((result) => {
+          if (!result.success) {
+            toast.error(result.message);
+            setItems(leads);
+            return;
+          }
+          toast.success(result.message);
+        })
+        .catch(() => {
+          toast.error("Stage wijzigen mislukt. Probeer opnieuw.");
           setItems(leads);
-          return;
-        }
-        toast.success(result.message);
-      });
+        });
     });
   }
 

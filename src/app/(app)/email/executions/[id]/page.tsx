@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { EmailSubnav } from "@/components/email/email-subnav";
 import { PageHeader } from "@/components/layout/page-header";
+import { ReloadErrorAlert } from "@/components/layout/reload-error-alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import {
   listSequenceEnrollmentsForExecution,
   listExecutionQueueJobs,
 } from "@/lib/email/execution/queries";
+import { toUserFacingError } from "@/lib/ui/user-facing-error";
 
 export const metadata: Metadata = { title: "Execution Detail" };
 
@@ -23,20 +25,64 @@ export default async function ExecutionDetailPage({ params }: PageProps) {
   if (!context) return null;
   const orgId = context.organization.id;
 
-  const [execution, enrollments, queueJobs] = await Promise.all([
-    getEmailCampaignExecution({ organizationId: orgId, executionId: id }),
-    listSequenceEnrollmentsForExecution({
-      organizationId: orgId,
-      executionId: id,
-      limit: 50,
-    }),
-    listExecutionQueueJobs({ organizationId: orgId, limit: 100 }),
-  ]);
+  let errorMessage: string | null = null;
+  let execution: Awaited<ReturnType<typeof getEmailCampaignExecution>> = null;
+  let enrollments: Awaited<
+    ReturnType<typeof listSequenceEnrollmentsForExecution>
+  > = [];
+  let queueJobs: Awaited<ReturnType<typeof listExecutionQueueJobs>> = [];
+
+  try {
+    [execution, enrollments, queueJobs] = await Promise.all([
+      getEmailCampaignExecution({ organizationId: orgId, executionId: id }),
+      listSequenceEnrollmentsForExecution({
+        organizationId: orgId,
+        executionId: id,
+        limit: 50,
+      }),
+      listExecutionQueueJobs({ organizationId: orgId, limit: 100 }),
+    ]);
+  } catch (error) {
+    errorMessage = toUserFacingError(
+      error,
+      "Kon executiondetails niet laden.",
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <div>
+        <PageHeader
+          title="Execution"
+          description="Sequence execution detail."
+          breadcrumbs={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "Email Engine", href: "/email" },
+            { label: "Executions", href: "/email/executions" },
+            { label: id },
+          ]}
+        />
+        <EmailSubnav currentPath="/email/executions" />
+        <ReloadErrorAlert description={errorMessage} />
+      </div>
+    );
+  }
 
   if (!execution) {
     return (
-      <div className="p-6 text-sm text-muted-foreground">
-        Execution not found.
+      <div>
+        <PageHeader
+          title="Execution"
+          description="Sequence execution detail."
+          breadcrumbs={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "Email Engine", href: "/email" },
+            { label: "Executions", href: "/email/executions" },
+            { label: id },
+          ]}
+        />
+        <EmailSubnav currentPath="/email/executions" />
+        <p className="text-sm text-muted-foreground">Execution not found.</p>
       </div>
     );
   }
@@ -65,7 +111,7 @@ export default async function ExecutionDetailPage({ params }: PageProps) {
     <div>
       <PageHeader
         title={`Execution ${execution.id}`}
-        description="Preview-only execution architecture: internal queue and rendered snapshots only."
+        description="Execution architecture: internal queue and rendered snapshots. Live provider dispatch remains gated."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Email Engine", href: "/email" },
@@ -132,7 +178,7 @@ export default async function ExecutionDetailPage({ params }: PageProps) {
           Enrollments (sample)
         </div>
         <div className="divide-y">
-          {enrollments.length === 0 ? (
+          {enrollmentRows.length === 0 ? (
             <div className="p-4 text-sm text-muted-foreground">
               No enrollments yet.
             </div>

@@ -26,6 +26,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { countCompanies } from "@/lib/companies/queries";
+import { countCompaniesByCategory } from "@/lib/companies/categories/queries";
+import { getClassificationDashboardStats } from "@/lib/companies/classification/queries";
 import { countContactSignals } from "@/lib/contacts/queries";
 import { formatDealValue } from "@/lib/crm/constants";
 import { getCrmDashboardStats } from "@/lib/crm/queries";
@@ -56,6 +58,12 @@ export default async function DashboardPage() {
   const companyCount = orgId
     ? await countCompanies(orgId).catch(() => 0)
     : 0;
+  const companiesByCategory = orgId
+    ? await countCompaniesByCategory(orgId).catch(() => [])
+    : [];
+  const classificationStats = orgId
+    ? await getClassificationDashboardStats(orgId).catch(() => null)
+    : null;
   const contactCount = orgId
     ? await countContactSignals(orgId).catch(() => 0)
     : 0;
@@ -183,6 +191,161 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      <Card className="mt-8 shadow-none">
+        <CardHeader className="flex flex-row items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-base">Companies by Category</CardTitle>
+            <CardDescription>
+              Top categories for this organization.
+            </CardDescription>
+          </div>
+          <Button
+            nativeButton={false}
+            variant="outline"
+            size="sm"
+            render={<Link href="/settings/company-categories" />}
+          >
+            Manage
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {companiesByCategory.length === 0 ? (
+            <EmptyState
+              icon={Building2}
+              title="Nog geen categoriedata"
+              description="Wijs categorieën toe aan bedrijven om dit overzicht te vullen."
+              actionLabel="Naar bedrijven"
+              actionHref="/companies"
+            />
+          ) : (
+            <div className="space-y-3">
+              {companiesByCategory.slice(0, 8).map((row) => {
+                const max = companiesByCategory[0]?.count || 1;
+                const width = Math.max(8, Math.round((row.count / max) * 100));
+                return (
+                  <div key={`${row.categoryId ?? "none"}-${row.name}`}>
+                    <div className="mb-1 flex items-center justify-between gap-3 text-sm">
+                      <span className="font-medium">{row.name}</span>
+                      <span className="text-muted-foreground">{row.count}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted">
+                      <div
+                        className="h-2 rounded-full"
+                        style={{
+                          width: `${width}%`,
+                          backgroundColor: row.color ?? "#64748B",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Link href="/companies" className="group">
+          <Card className="h-full shadow-none transition-colors group-hover:bg-muted/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Companies needing review
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold tracking-tight">
+                {classificationStats?.needingReview ?? 0}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/companies" className="group">
+          <Card className="h-full shadow-none transition-colors group-hover:bg-muted/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Unknown / low confidence
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold tracking-tight">
+                {classificationStats?.unknown ?? 0}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Card className="shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Average confidence
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold tracking-tight">
+              {classificationStats?.avgConfidence != null
+                ? `${classificationStats.avgConfidence}%`
+                : "—"}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Manual overrides
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold tracking-tight">
+              {classificationStats?.manualOverrides ?? 0}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="mt-4 shadow-none">
+        <CardHeader>
+          <CardTitle className="text-base">Top detected categories</CardTitle>
+          <CardDescription>
+            Most frequent AI-suggested categories across companies.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!classificationStats || classificationStats.topDetected.length === 0 ? (
+            <EmptyState
+              icon={Activity}
+              title="Nog geen classificaties"
+              description="Classificeer bedrijven na scrape, enrichment of handmatig via Reclassify."
+              actionLabel="Naar bedrijven"
+              actionHref="/companies"
+            />
+          ) : (
+            <div className="space-y-3">
+              {classificationStats.topDetected.map((row) => {
+                const max = classificationStats.topDetected[0]?.count || 1;
+                const width = Math.max(8, Math.round((row.count / max) * 100));
+                return (
+                  <div key={row.categoryId}>
+                    <div className="mb-1 flex items-center justify-between gap-3 text-sm">
+                      <span className="font-medium">{row.name}</span>
+                      <span className="text-muted-foreground">{row.count}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted">
+                      <div
+                        className="h-2 rounded-full"
+                        style={{
+                          width: `${width}%`,
+                          backgroundColor: row.color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <h2 className="mt-8 mb-3 text-sm font-medium text-muted-foreground">
         CRM

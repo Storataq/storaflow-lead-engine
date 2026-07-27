@@ -39,10 +39,13 @@ export type CampaignAudienceDefinition = AudienceFilter & {
     | "selected_companies"
     | "selected_contacts"
     | "crm_filters"
+    | "company_category"
     | "manual";
   selectedLeadIds?: string[];
   selectedCompanyIds?: string[];
   selectedContactIds?: string[];
+  /** Phase 23C — filter Campaign Ready candidates by company category */
+  companyCategoryIds?: string[];
   pipelineStageIds?: string[];
   qualificationMin?: number;
   opportunityMin?: number;
@@ -58,6 +61,7 @@ export type CampaignAudienceDefinition = AudienceFilter & {
 export type AudienceCandidate = {
   leadId: string;
   companyId: string | null;
+  companyCategoryId?: string | null;
   contactId: string | null;
   companyName: string;
   preferredEmail: string | null;
@@ -262,6 +266,14 @@ export function matchesAudienceDefinition(
     if (
       !candidate.companyId ||
       !definition.selectedCompanyIds.includes(candidate.companyId)
+    ) {
+      return false;
+    }
+  }
+  if (definition.companyCategoryIds?.length) {
+    if (
+      !candidate.companyCategoryId ||
+      !definition.companyCategoryIds.includes(candidate.companyCategoryId)
     ) {
       return false;
     }

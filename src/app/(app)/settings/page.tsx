@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { PageHeader } from "@/components/layout/page-header";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -41,29 +43,67 @@ export default function SettingsPage() {
           { label: "Instellingen" },
         ]}
       />
-      <Card className="max-w-3xl shadow-none">
-        <CardHeader>
-          <CardTitle className="text-base">Scrapinggedrag</CardTitle>
-          <CardDescription>
-            Deze defaults staan in de database (`organization_settings`) en
-            worden bij organisatie-aanmaak toegepast. Live scraping volgt in een
-            latere fase.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="divide-y divide-border">
-            {defaults.map((item) => (
-              <div
-                key={item.label}
-                className="grid gap-1 py-3 sm:grid-cols-[14rem_1fr] sm:gap-4"
-              >
-                <dt className="text-sm text-muted-foreground">{item.label}</dt>
-                <dd className="text-sm font-medium break-all">{item.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </CardContent>
-      </Card>
+      <div className="grid max-w-3xl gap-4">
+        <Card className="shadow-none">
+          <CardHeader>
+            <CardTitle className="text-base">Company Categories</CardTitle>
+            <CardDescription>
+              Beheer bedrijfscategorieën (Restaurant, Hotel, Retail, …) voor
+              filtering, CRM en toekomstige automations.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link href="/settings/company-categories" />}
+            >
+              Open Company Categories
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="shadow-none">
+          <CardHeader>
+            <CardTitle className="text-base">AI & email intelligence</CardTitle>
+            <CardDescription>
+              Beheer AI feature flags, budgetten en veiligheidsinstellingen voor
+              je organisatie.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link href="/settings/ai" />}
+            >
+              Open AI-instellingen
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="shadow-none">
+          <CardHeader>
+            <CardTitle className="text-base">Scrapinggedrag</CardTitle>
+            <CardDescription>
+              Deze defaults staan in de database (`organization_settings`) en
+              worden bij organisatie-aanmaak toegepast. Live scraping volgt in een
+              latere fase.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <dl className="divide-y divide-border">
+              {defaults.map((item) => (
+                <div
+                  key={item.label}
+                  className="grid gap-1 py-3 sm:grid-cols-[14rem_1fr] sm:gap-4"
+                >
+                  <dt className="text-sm text-muted-foreground">{item.label}</dt>
+                  <dd className="text-sm font-medium break-all">{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

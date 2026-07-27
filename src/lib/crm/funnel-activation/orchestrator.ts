@@ -257,6 +257,7 @@ export async function runFunnelActivation(
         created_by: request.userId ?? null,
         retry_count: request.triggerSource === "retry" ? 1 : 0,
         result_summary: {},
+        source_company_category_id: request.sourceCompanyCategoryId ?? null,
       },
       { onConflict: "organization_id,idempotency_key" },
     )

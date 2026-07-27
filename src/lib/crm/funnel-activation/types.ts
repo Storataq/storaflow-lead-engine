@@ -133,9 +133,12 @@ export type FunnelActivationRequest = {
     | "enrichment_completed"
     | "scrape_completed"
     | "retry"
-    | "api";
+    | "api"
+    | "category_actions";
   force?: boolean;
   confirmed?: boolean;
+  /** Phase 23C — optional category provenance */
+  sourceCompanyCategoryId?: string | null;
 };
 
 export type FunnelActivationError = {

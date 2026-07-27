@@ -297,6 +297,25 @@ async function loadAudienceCandidates(
 
   const leadMap = new Map((leads ?? []).map((l) => [l.id, l]));
 
+  const companyIds = [
+    ...new Set(
+      rows
+        .map((r) => r.company_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const companyCategoryMap = new Map<string, string | null>();
+  if (companyIds.length) {
+    const { data: companies } = await supabase
+      .from("companies")
+      .select("id, company_category_id")
+      .eq("organization_id", organizationId)
+      .in("id", companyIds);
+    for (const company of companies ?? []) {
+      companyCategoryMap.set(company.id, company.company_category_id);
+    }
+  }
+
   const candidates: AudienceCandidate[] = [];
   for (const row of rows) {
     const lead = leadMap.get(row.lead_id);
@@ -322,6 +341,9 @@ async function loadAudienceCandidates(
     candidates.push({
       leadId: row.lead_id,
       companyId: row.company_id,
+      companyCategoryId: row.company_id
+        ? companyCategoryMap.get(row.company_id) ?? null
+        : null,
       contactId: row.contact_id,
       companyName: lead?.company_name ?? "Unknown",
       preferredEmail: row.preferred_email ?? lead?.email ?? null,

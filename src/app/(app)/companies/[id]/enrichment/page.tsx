@@ -53,7 +53,9 @@ export default async function CompanyEnrichmentResultsPage({
   if (!company) notFound();
 
   const [snapshot, contacts] = await Promise.all([
-    getLatestCompanyEnrichmentSnapshot(context.organization.id, company.id),
+    getLatestCompanyEnrichmentSnapshot(context.organization.id, company.id).catch(
+      () => null,
+    ),
     listCompanyContacts(context.organization.id, company.id).catch(() => []),
   ]);
 

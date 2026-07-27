@@ -1,13 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createServiceClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 type SupabaseLike = any;
+
+async function getReadClient(): Promise<SupabaseLike> {
+  // UI reads use the user-scoped client so pages work without service role
+  // and RLS still scopes data to the signed-in member.
+  return (await createClient()) as unknown as SupabaseLike;
+}
 
 export async function listEmailCampaignExecutions(input: {
   organizationId: string;
   limit?: number;
 }): Promise<any[]> {
-  const supabase = createServiceClient() as unknown as SupabaseLike;
+  const supabase = await getReadClient();
   const { data, error } = await supabase
     .from("email_campaign_executions")
     .select("*")
@@ -22,7 +28,7 @@ export async function getEmailCampaignExecution(input: {
   organizationId: string;
   executionId: string;
 }): Promise<any | null> {
-  const supabase = createServiceClient() as unknown as SupabaseLike;
+  const supabase = await getReadClient();
   const { data, error } = await supabase
     .from("email_campaign_executions")
     .select("*")
@@ -38,7 +44,7 @@ export async function listSequenceEnrollmentsForExecution(input: {
   executionId: string;
   limit?: number;
 }): Promise<any[]> {
-  const supabase = createServiceClient() as unknown as SupabaseLike;
+  const supabase = await getReadClient();
   const { data, error } = await supabase
     .from("email_sequence_enrollments")
     .select("*")
@@ -54,7 +60,7 @@ export async function getSequenceEnrollment(input: {
   organizationId: string;
   enrollmentId: string;
 }): Promise<any | null> {
-  const supabase = createServiceClient() as unknown as SupabaseLike;
+  const supabase = await getReadClient();
   const { data, error } = await supabase
     .from("email_sequence_enrollments")
     .select("*")
@@ -70,7 +76,7 @@ export async function listExecutionQueueJobs(input: {
   limit?: number;
   status?: string;
 }): Promise<any[]> {
-  const supabase = createServiceClient() as unknown as SupabaseLike;
+  const supabase = await getReadClient();
   let query = supabase
     .from("email_queue_jobs")
     .select("*")
@@ -85,3 +91,17 @@ export async function listExecutionQueueJobs(input: {
   return (data ?? []) as any[];
 }
 
+export async function listSequenceEnrollments(input: {
+  organizationId: string;
+  limit?: number;
+}): Promise<any[]> {
+  const supabase = await getReadClient();
+  const { data, error } = await supabase
+    .from("email_sequence_enrollments")
+    .select("*")
+    .eq("organization_id", input.organizationId)
+    .order("created_at", { ascending: false })
+    .limit(input.limit ?? 100);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as any[];
+}

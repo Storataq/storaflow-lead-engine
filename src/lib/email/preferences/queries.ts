@@ -1,8 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { createServiceClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 type SupabaseLike = any;
+
+async function getReadClient(): Promise<SupabaseLike> {
+  return (await createClient()) as unknown as SupabaseLike;
+}
 
 export type PreferenceListRow = {
   id: string;
@@ -54,7 +58,7 @@ export async function listRecipientPreferences(
     q?: string;
   },
 ): Promise<PreferenceListRow[]> {
-  const supabase = createServiceClient() as SupabaseLike;
+  const supabase = await getReadClient();
   let query = supabase
     .from("email_recipient_preferences")
     .select(
@@ -92,7 +96,7 @@ export async function listSuppressions(
     q?: string;
   },
 ): Promise<SuppressionListRow[]> {
-  const supabase = createServiceClient() as SupabaseLike;
+  const supabase = await getReadClient();
   let query = supabase
     .from("email_suppressions")
     .select(
@@ -127,7 +131,7 @@ export async function listSuppressions(
 export async function getPreferenceStats(
   organizationId: string,
 ): Promise<PreferenceStats> {
-  const supabase = createServiceClient() as SupabaseLike;
+  const supabase = await getReadClient();
   const [{ data: prefs }, { data: events }] = await Promise.all([
     supabase
       .from("email_recipient_preferences")

@@ -20,6 +20,8 @@ import {
   listRecentTrackingEvents,
 } from "@/lib/email/tracking";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
+import { ReloadErrorAlert } from "@/components/layout/reload-error-alert";
+import { toUserFacingError } from "@/lib/ui/user-facing-error";
 
 export const metadata: Metadata = { title: "Email Analytics" };
 
@@ -27,18 +29,47 @@ export default async function EmailAnalyticsPage() {
   const context = await getActiveOrganization();
   if (!context) return null;
 
-  const [overview, engagement, recentEvents, recentTracking] = await Promise.all([
-    getDeliveryOverview(context.organization.id),
-    getEngagementOverview(context.organization.id),
-    listRecentProviderEvents(context.organization.id, 12),
-    listRecentTrackingEvents(context.organization.id, 12),
-  ]);
+  let errorMessage: string | null = null;
+  let overview = {
+    prepared: 0,
+    sent: 0,
+    delivered: 0,
+    delayed: 0,
+    softBounced: 0,
+    hardBounced: 0,
+    complained: 0,
+    rejected: 0,
+    failed: 0,
+  };
+  let engagement = {
+    openedMessages: 0,
+    uniqueOpens: 0,
+    clickedMessages: 0,
+    uniqueClicks: 0,
+    repliedMessages: 0,
+  };
+  let recentEvents: Awaited<ReturnType<typeof listRecentProviderEvents>> = [];
+  let recentTracking: Awaited<ReturnType<typeof listRecentTrackingEvents>> = [];
+
+  try {
+    [overview, engagement, recentEvents, recentTracking] = await Promise.all([
+      getDeliveryOverview(context.organization.id),
+      getEngagementOverview(context.organization.id),
+      listRecentProviderEvents(context.organization.id, 12),
+      listRecentTrackingEvents(context.organization.id, 12),
+    ]);
+  } catch (error) {
+    errorMessage = toUserFacingError(
+      error,
+      "Kon analytics niet laden. Controleer of delivery/tracking-migraties zijn uitgevoerd.",
+    );
+  }
 
   return (
     <div>
       <PageHeader
         title="Analytics"
-        description="Delivery, engagement, and operational email metrics. AI insights summarize Phase 21J data on demand."
+        description="Delivery, engagement, and operational email metrics. AI insights summarize analytics data on demand."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Email Engine", href: "/email" },
@@ -46,6 +77,10 @@ export default async function EmailAnalyticsPage() {
         ]}
       />
       <EmailSubnav currentPath="/email/analytics" />
+      {errorMessage ? (
+        <ReloadErrorAlert description={errorMessage} />
+      ) : (
+        <>
       <div className="mb-4">
         <a
           href="/email/analytics/insights"
@@ -167,6 +202,8 @@ export default async function EmailAnalyticsPage() {
           </Table>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

@@ -57,7 +57,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
       <div>
         <PageHeader
           title="Lead"
-          description="Lead overview."
+          description="Lead details could not be loaded."
           breadcrumbs={[
             { label: "Dashboard", href: "/dashboard" },
             { label: "CRM", href: "/crm" },
@@ -182,7 +182,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     <div>
       <PageHeader
         title={lead.company_name}
-        description="Lead overview with funnel readiness, intelligence, timeline, notes, tasks and deals."
+        description="Funnel readiness, intelligence, timeline, notes, tasks and deals."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "CRM", href: "/crm" },

@@ -69,6 +69,13 @@ export type Database = {
           created_by: string | null;
           created_at: string;
           updated_at: string;
+          postal_address: string | null;
+          privacy_policy_url: string | null;
+          terms_url: string | null;
+          support_email: string | null;
+          logo_url: string | null;
+          default_email_language: string;
+          email_company_address_required: boolean;
         };
         Insert: {
           id?: string;
@@ -77,6 +84,13 @@ export type Database = {
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          postal_address?: string | null;
+          privacy_policy_url?: string | null;
+          terms_url?: string | null;
+          support_email?: string | null;
+          logo_url?: string | null;
+          default_email_language?: string;
+          email_company_address_required?: boolean;
         };
         Update: {
           id?: string;
@@ -85,6 +99,13 @@ export type Database = {
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          postal_address?: string | null;
+          privacy_policy_url?: string | null;
+          terms_url?: string | null;
+          support_email?: string | null;
+          logo_url?: string | null;
+          default_email_language?: string;
+          email_company_address_required?: boolean;
         };
         Relationships: [];
       };

@@ -30,17 +30,17 @@ export function CreateOrganizationForm() {
     <Card className="mx-auto w-full max-w-lg border-border/80 shadow-sm">
       <CardHeader>
         <CardTitle className="text-xl tracking-tight">
-          Organisatie aanmaken
+          Create organization
         </CardTitle>
         <CardDescription>
-          Maak een organisatie aan om leads, zoekopdrachten en scrapingtaken te
-          beheren. Dit vormt later de basis voor multi-tenant uitbreiding.
+          Create a Storaflow organization to manage leads, searches and scrape
+          jobs. This is the foundation for multi-tenant workspaces.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Organisatienaam</Label>
+            <Label htmlFor="name">Organization name</Label>
             <Input
               id="name"
               name="name"
@@ -55,7 +55,7 @@ export function CreateOrganizationForm() {
             </Alert>
           ) : null}
           <Button type="submit" disabled={pending}>
-            {pending ? "Bezig…" : "Organisatie aanmaken"}
+            {pending ? "Creating…" : "Create organization"}
           </Button>
         </form>
       </CardContent>

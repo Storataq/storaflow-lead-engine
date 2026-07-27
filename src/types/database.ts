@@ -100,6 +100,12 @@ export type Organization = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  postal_address?: string | null;
+  privacy_policy_url?: string | null;
+  terms_url?: string | null;
+  support_email?: string | null;
+  logo_url?: string | null;
+  default_email_language?: string | null;
 };
 
 export type OrganizationMember = {

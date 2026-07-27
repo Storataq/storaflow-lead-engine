@@ -9,8 +9,45 @@ export const APP_COPYRIGHT = `© ${new Date().getFullYear()} Storaflow`;
 /** Short label for PWA / install surfaces */
 export const APP_SHORT_NAME = "Storaflow";
 
+/** Fallback organization label when name is missing/blank */
+export const DEFAULT_ORGANIZATION_NAME = "My Organization";
+
+/**
+ * Configurable support / contact email for branding surfaces.
+ * Prefer organization.support_email when set.
+ */
+export const DEFAULT_SUPPORT_EMAIL =
+  process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || "info@storalabs.com";
+
+export function resolveOrganizationDisplayName(
+  name: string | null | undefined,
+): string {
+  const trimmed = name?.trim();
+  if (!trimmed) return DEFAULT_ORGANIZATION_NAME;
+
+  // Soft UI alias for known legacy seed names — does not rewrite the database.
+  const legacy = trimmed.toLowerCase();
+  if (
+    legacy === "storataq intern" ||
+    legacy === "storataq" ||
+    legacy === "lead engine"
+  ) {
+    return DEFAULT_ORGANIZATION_NAME;
+  }
+
+  return trimmed;
+}
+
+export function resolveSupportEmail(
+  organizationEmail: string | null | undefined,
+): string {
+  const trimmed = organizationEmail?.trim();
+  if (trimmed && trimmed.length > 0) return trimmed;
+  return DEFAULT_SUPPORT_EMAIL;
+}
+
 export const DEFAULT_USER_AGENT =
-  "StoraflowWebsiteCrawler/0.1 (+https://storataq.local; respectful; contact-discovery)";
+  "StoraflowWebsiteCrawler/0.1 (+https://storalabs.com; respectful; contact-discovery)";
 
 export type NavChild = {
   href: string;

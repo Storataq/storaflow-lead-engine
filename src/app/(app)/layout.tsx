@@ -6,6 +6,10 @@ import { CreateOrganizationForm } from "@/components/auth/create-organization-fo
 import { PageErrorState } from "@/components/layout/page-error-state";
 import { Toaster } from "@/components/ui/sonner";
 import {
+  resolveOrganizationDisplayName,
+  resolveSupportEmail,
+} from "@/lib/constants";
+import {
   getActiveOrganization,
   listUserOrganizations,
   requireUser,
@@ -64,18 +68,25 @@ export default async function AppLayout({
     );
   }
 
+  const organizationName = resolveOrganizationDisplayName(
+    context.organization.name,
+  );
+  const supportEmail = resolveSupportEmail(
+    context.organization.support_email ?? null,
+  );
+
   return (
     <div className="flex min-h-full flex-1 bg-background">
-      <AppSidebar organizationName={context.organization.name} />
+      <AppSidebar organizationName={organizationName} />
       <div className="flex min-w-0 flex-1 flex-col">
         <AppTopbar
-          title={context.organization.name}
           userEmail={userEmail}
           userName={context.profile?.full_name ?? null}
-          organizationName={context.organization.name}
+          organizationName={organizationName}
+          supportEmail={supportEmail}
           organizations={organizations.map((row) => ({
             id: row.organization.id,
-            name: row.organization.name,
+            name: resolveOrganizationDisplayName(row.organization.name),
           }))}
           activeOrganizationId={context.organization.id}
         />

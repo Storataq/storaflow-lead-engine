@@ -22,7 +22,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDealValue } from "@/lib/crm/constants";
-import { getCrmDashboardStats } from "@/lib/crm/queries";
+import {
+  getCrmDashboardStats,
+  getPipelineAnalytics,
+} from "@/lib/crm/queries";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
 import { toUserFacingError } from "@/lib/ui/user-facing-error";
 
@@ -36,9 +39,13 @@ export default async function CrmDashboardPage() {
 
   let errorMessage: string | null = null;
   let stats = null;
+  let forecast = null;
 
   try {
-    stats = await getCrmDashboardStats(context.organization.id);
+    [stats, forecast] = await Promise.all([
+      getCrmDashboardStats(context.organization.id),
+      getPipelineAnalytics(context.organization.id).catch(() => null),
+    ]);
   } catch (error) {
     errorMessage = toUserFacingError(
       error,
@@ -63,10 +70,19 @@ export default async function CrmDashboardPage() {
     },
     {
       label: "Pipeline waarde",
-      value: formatDealValue(stats?.pipelineValue ?? 0),
-      hint: "Open leads",
+      value: formatDealValue(
+        forecast?.pipelineValue ?? stats?.pipelineValue ?? 0,
+      ),
+      hint: "Open deal value",
       icon: TrendingUp,
-      href: "/crm/pipeline",
+      href: "/crm/pipeline?view=deals",
+    },
+    {
+      label: "Weighted revenue",
+      value: formatDealValue(forecast?.weightedRevenue ?? 0),
+      hint: "Probability × value",
+      icon: TrendingUp,
+      href: "/crm/analytics",
     },
     {
       label: "Deals gewonnen",
@@ -84,10 +100,10 @@ export default async function CrmDashboardPage() {
     },
     {
       label: "Conversieratio",
-      value: `${stats?.conversionRate ?? 0}%`,
-      hint: "Gewonnen / gesloten",
+      value: `${forecast?.winRate ?? stats?.conversionRate ?? 0}%`,
+      hint: "Win rate",
       icon: Percent,
-      href: "/crm/pipeline",
+      href: "/crm/analytics",
     },
     {
       label: "Leads deze maand",
@@ -98,10 +114,19 @@ export default async function CrmDashboardPage() {
     },
     {
       label: "Gem. dealwaarde",
-      value: formatDealValue(stats?.averageDealValue ?? 0),
+      value: formatDealValue(
+        forecast?.averageDealSize ?? stats?.averageDealValue ?? 0,
+      ),
       hint: "Open deals",
       icon: Handshake,
       href: "/crm/deals",
+    },
+    {
+      label: "Monthly forecast",
+      value: formatDealValue(forecast?.monthlyForecast ?? 0),
+      hint: "Weighted close dates",
+      icon: TrendingUp,
+      href: "/crm/analytics",
     },
   ] as const;
 
@@ -119,9 +144,16 @@ export default async function CrmDashboardPage() {
             <Button
               nativeButton={false}
               variant="outline"
-              render={<Link href="/crm/pipeline" />}
+              render={<Link href="/crm/pipeline?view=deals" />}
             >
-              Pipeline
+              Deal board
+            </Button>
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link href="/crm/analytics" />}
+            >
+              Analytics
             </Button>
             <Button nativeButton={false} render={<Link href="/crm/leads" />}>
               Naar leads

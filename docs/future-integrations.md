@@ -28,24 +28,55 @@ mailbox probing (opt-in), address conflict review workflow.
 Architecture lives in `src/lib/email/` with placeholder UI under `/email`.
 See [AUTOMATED-EMAIL-ENGINE.md](./AUTOMATED-EMAIL-ENGINE.md).
 
-**Still not implemented:** provider SDKs, workers, send, tracking webhooks.
+**Phase 25D delivered:** visual AI Campaign Builder (`src/lib/email/campaign-builder/`).
+See [ai-email-campaign-builder.md](./ai-email-campaign-builder.md).
+
+**Still later:** A/B assignment at enrollment, canvas↔sequence sync on save,
+multi-channel send workers (SMS / WhatsApp / LinkedIn / push / in-app) via
+`email_campaign_channel_plans`.
+
+## Multi-channel messaging (planned)
+
+- **Hook:** `email_campaign_channel_plans.channel` ∈ email | sms | whatsapp | linkedin | push | in_app
+- **Automation:** `FUTURE_CHANNELS` + `channel_plan_json` on `crm_automations`
+- Keep email as the only enabled channel until dedicated providers exist
+- Workflow blocks can gain channel-specific send nodes without changing the campaign row model
 
 ## Campaign / outbound email / automation (execution)
 
-- **Hook:** new `lib/campaigns/` (or similar) consuming campaign-ready leads from opportunity readiness
-- **CRM:** tasks/notes remain the human follow-up layer until automation ships
-- **Safety:** explicit user action required for any send; no silent outbound
+- **Phase 25F delivered:** AI Sales Automation Engine on `crm_automation_events`
+  (`src/lib/crm/automation/`). See [ai-sales-automation.md](./ai-sales-automation.md).
+- **Still later:** live CRM/email side-effects from executor (today simulated + logged);
+  dedicated worker claiming queued runs; delay scheduling
+- **CRM:** tasks/notes remain available for human override
+- **Safety:** automation enable/run restricted to owner/admin; no silent provider sends until wired
 
 ## Webhooks & public API
 
-- **Hook:** future `app/api/` routes with org-scoped auth; emit events from job completion / deal won
-- **Today:** server actions + RLS only
+- **Phase 25I delivered:** Integrations Marketplace webhook tables + incoming route scaffolding
+  (`/api/integrations/webhooks/[code]`) with HMAC validation helpers — see
+  [integrations-marketplace.md](./integrations-marketplace.md)
+- **Still later:** per-provider handlers, outgoing dispatcher, signed public API
+- **Automation:** `webhook_ready` / `export_ready` / Slack / Teams action stubs in executor
+- **Today:** marketplace + email Resend webhooks; server actions + RLS for app UI
+
+## Integrations Marketplace (Phase 25I — delivered)
+
+- Catalog + plugin registry for CRM/marketing/storage/AI/automation providers
+- OAuth 2.0 / refresh / encrypted credential storage / sync engine / audit
+- UI: `/integrations` (distinct from scrape `/connectors`)
+- Copilot handoffs for HubSpot, Slack, Drive, Calendar
+- **Still later:** live provider adapters beyond stubs; scheduled worker claiming queue
 
 ## AI integration
 
 - **Hook:** Executive Summary, lead workspace “AI” placeholders, enrichment copy — all rule-based today
+- **Phase 25G:** grounded executive summary on `/crm/executive` (`buildGroundedExecutiveSummary`) — facts vs suggestions; not model-generated
+- **Phase 25H:** Storaflow AI Copilot (`src/lib/copilot/`) — NL tools + optional LLM enrichment via Phase 21K provider; mutations require `confirmed: true`
+- **Phase 25I:** Copilot reads connected marketplace integrations (no tokens) for export/notify/calendar/drive proposals
 - **Later:** swap summary builders for model calls behind a server-only adapter; keep UI contracts (`ExecutiveSummary`, NBA cards) stable
 - **Never** put API keys in client code
+- **Voice / multi-provider:** reserved in Copilot constants (`FUTURE_VOICE_CAPABILITIES`, `FUTURE_AI_PROVIDERS`)
 
 ## Automated Email Engine (later — not implemented)
 
@@ -66,5 +97,6 @@ Integration points:
 
 ## Background worker
 
-- **Hook:** `worker/` placeholder — claim queued jobs instead of client poll
+- **Hook:** `worker/` placeholder — claim queued scrape jobs and `crm_automation_runs` / outbox events
+- **Today:** in-app `processAutomationQueueAction` for manual/dev processing
 - Keep the same job status transitions so the Jobs UI stays unchanged

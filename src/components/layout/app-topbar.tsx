@@ -42,6 +42,8 @@ type AppTopbarProps = {
   supportEmail: string;
   organizations?: Array<{ id: string; name: string }>;
   activeOrganizationId?: string;
+  /** Staff-only — never set for normal customers. */
+  isPlatformAdmin?: boolean;
 };
 
 function initials(name: string | null, email: string): string {
@@ -64,6 +66,7 @@ export function AppTopbar({
   supportEmail,
   organizations = [],
   activeOrganizationId,
+  isPlatformAdmin = false,
 }: AppTopbarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -218,6 +221,14 @@ export function AppTopbar({
               >
                 AI settings
               </DropdownMenuItem>
+              {isPlatformAdmin ? (
+                <DropdownMenuItem
+                  render={<Link href="/platform-admin" />}
+                  nativeButton={false}
+                >
+                  Platform Admin
+                </DropdownMenuItem>
+              ) : null}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem

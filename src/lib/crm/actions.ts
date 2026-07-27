@@ -26,6 +26,7 @@ function revalidateCrm(paths: string[] = []) {
   revalidatePath("/crm/deals");
   revalidatePath("/crm/tasks");
   revalidatePath("/crm/notes");
+  revalidatePath("/crm/analytics");
   revalidatePath("/dashboard");
   revalidatePath("/activity");
   for (const path of paths) {
@@ -465,6 +466,8 @@ export async function createPipelineAction(
       sort_order: stage.sortOrder,
       is_won: "isWon" in stage ? Boolean(stage.isWon) : false,
       is_lost: "isLost" in stage ? Boolean(stage.isLost) : false,
+      probability:
+        "probability" in stage ? Number(stage.probability ?? 0) : 0,
     });
   }
 
@@ -483,6 +486,10 @@ export async function createStageAction(
   const color = String(formData.get("color") ?? "#64748b").trim() || "#64748b";
   const isWon = formData.get("is_won") === "on";
   const isLost = formData.get("is_lost") === "on";
+  const probabilityRaw = Number(formData.get("probability") ?? 0);
+  const probability = Number.isFinite(probabilityRaw)
+    ? Math.max(0, Math.min(100, Math.round(probabilityRaw)))
+    : 0;
 
   if (!pipelineId || !name) {
     return { success: false, message: "Pipeline en naam zijn verplicht." };
@@ -513,6 +520,7 @@ export async function createStageAction(
       sort_order: count ?? 0,
       is_won: isWon,
       is_lost: isLost,
+      probability: isWon ? 100 : isLost ? 0 : probability,
     })
     .select("id")
     .single();
@@ -539,6 +547,15 @@ export async function createDealAction(
   const stageId = String(formData.get("stage_id") ?? "");
   const leadId = String(formData.get("lead_id") ?? "").trim() || null;
   const value = Number(formData.get("value") ?? 0);
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const priority = String(formData.get("priority") ?? "normal") || "normal";
+  const expectedClose = String(formData.get("expected_close_date") ?? "").trim();
+  const probabilityRaw = formData.get("probability");
+  const probability =
+    probabilityRaw === null || String(probabilityRaw).trim() === ""
+      ? null
+      : Math.max(0, Math.min(100, Number(probabilityRaw)));
+  const tags = parseTags(String(formData.get("tags") ?? ""));
 
   if (!title || !pipelineId || !stageId) {
     return { success: false, message: "Titel, pipeline en stage zijn verplicht." };
@@ -550,6 +567,11 @@ export async function createDealAction(
     data: { user },
   } = await supabase.auth.getUser();
 
+  const expectedRevenue =
+    probability != null && Number.isFinite(value)
+      ? (value * probability) / 100
+      : null;
+
   const { data, error } = await supabase
     .from("crm_deals")
     .insert({
@@ -559,9 +581,16 @@ export async function createDealAction(
       stage_id: stageId,
       lead_id: leadId,
       value: Number.isFinite(value) ? value : 0,
+      description,
+      priority,
+      tags,
+      probability: probability != null && Number.isFinite(probability) ? probability : null,
+      expected_revenue: expectedRevenue,
+      expected_close_date: expectedClose || null,
       owner_user_id: user?.id ?? null,
       created_by: user?.id ?? null,
       status: "open",
+      last_stage_changed_at: new Date().toISOString(),
     })
     .select("id")
     .single();
@@ -602,6 +631,7 @@ export async function createTaskAction(
   const dueRaw = String(formData.get("due_at") ?? "").trim();
   const priority = String(formData.get("priority") ?? "normal");
   const assigned = String(formData.get("assigned_user_id") ?? "").trim() || null;
+  const taskType = String(formData.get("task_type") ?? "internal") || "internal";
 
   if (!title) return { success: false, message: "Titel is verplicht." };
 
@@ -624,6 +654,7 @@ export async function createTaskAction(
       assigned_user_id: assigned || user?.id || null,
       created_by: user?.id ?? null,
       status: "todo",
+      task_type: taskType,
     })
     .select("id")
     .single();
@@ -1288,4 +1319,451 @@ export async function convertLeadToDealAction(
 
   revalidateCrm([`/crm/leads/${leadId}`, `/crm/deals/${data.id}`]);
   return { success: true, message: "Deal aangemaakt.", id: data.id };
+}
+
+export async function updatePipelineAction(
+  formData: FormData,
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const pipelineId = String(formData.get("pipeline_id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const color = String(formData.get("color") ?? "").trim() || "#2563eb";
+  if (!pipelineId || !name) {
+    return { success: false, message: "Pipeline en naam zijn verplicht." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("crm_pipelines")
+    .update({ name, description, color })
+    .eq("organization_id", context.organization.id)
+    .eq("id", pipelineId);
+
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon pipeline niet bijwerken."),
+    };
+  }
+  revalidateCrm();
+  return { success: true, message: "Pipeline bijgewerkt.", id: pipelineId };
+}
+
+export async function archivePipelineAction(
+  pipelineId: string,
+  archive = true,
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("crm_pipelines")
+    .update({
+      is_archived: archive,
+      archived_at: archive ? new Date().toISOString() : null,
+    })
+    .eq("organization_id", context.organization.id)
+    .eq("id", pipelineId);
+
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon pipeline niet archiveren."),
+    };
+  }
+  revalidateCrm();
+  return {
+    success: true,
+    message: archive ? "Pipeline gearchiveerd." : "Pipeline hersteld.",
+    id: pipelineId,
+  };
+}
+
+export async function updateStageAction(
+  formData: FormData,
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const stageId = String(formData.get("stage_id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const color = String(formData.get("color") ?? "").trim() || "#64748b";
+  const probability = Math.max(
+    0,
+    Math.min(100, Math.round(Number(formData.get("probability") ?? 0))),
+  );
+  const isWon = formData.get("is_won") === "on";
+  const isLost = formData.get("is_lost") === "on";
+
+  if (!stageId || !name) {
+    return { success: false, message: "Stage en naam zijn verplicht." };
+  }
+  if (isWon && isLost) {
+    return {
+      success: false,
+      message: "Een stage kan niet tegelijk gewonnen en verloren zijn.",
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("crm_funnel_stages")
+    .update({
+      name,
+      color,
+      probability: isWon ? 100 : isLost ? 0 : probability,
+      is_won: isWon,
+      is_lost: isLost,
+    })
+    .eq("organization_id", context.organization.id)
+    .eq("id", stageId);
+
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon stage niet bijwerken."),
+    };
+  }
+  revalidateCrm();
+  return { success: true, message: "Stage bijgewerkt.", id: stageId };
+}
+
+export async function reorderStagesAction(
+  pipelineId: string,
+  orderedStageIds: string[],
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+  if (!pipelineId || orderedStageIds.length === 0) {
+    return { success: false, message: "Geen stages om te herordenen." };
+  }
+
+  const supabase = await createClient();
+  const orgId = context.organization.id;
+
+  for (let index = 0; index < orderedStageIds.length; index += 1) {
+    const { error } = await supabase
+      .from("crm_funnel_stages")
+      .update({ sort_order: index })
+      .eq("organization_id", orgId)
+      .eq("pipeline_id", pipelineId)
+      .eq("id", orderedStageIds[index]);
+    if (error) {
+      return {
+        success: false,
+        message: toUserFacingError(error, "Kon stages niet herordenen."),
+      };
+    }
+  }
+
+  revalidateCrm();
+  return { success: true, message: "Stages herordend." };
+}
+
+export async function moveDealStageAction(
+  dealId: string,
+  stageId: string,
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const supabase = await createClient();
+  const orgId = context.organization.id;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: deal, error: dealError } = await supabase
+    .from("crm_deals")
+    .select("*")
+    .eq("organization_id", orgId)
+    .eq("id", dealId)
+    .maybeSingle();
+  if (dealError || !deal) {
+    return { success: false, message: "Deal niet gevonden." };
+  }
+
+  const { data: stage, error: stageError } = await supabase
+    .from("crm_funnel_stages")
+    .select("*")
+    .eq("organization_id", orgId)
+    .eq("id", stageId)
+    .maybeSingle();
+  if (stageError || !stage) {
+    return { success: false, message: "Stage niet gevonden." };
+  }
+  if (stage.pipeline_id !== deal.pipeline_id) {
+    return { success: false, message: "Stage hoort niet bij deze pipeline." };
+  }
+
+  const now = new Date().toISOString();
+  let status = deal.status;
+  let closedAt = deal.closed_at;
+  if (stage.is_won) {
+    status = "won";
+    closedAt = now;
+  } else if (stage.is_lost) {
+    status = "lost";
+    closedAt = now;
+  } else {
+    status = "open";
+    closedAt = null;
+  }
+
+  const expectedRevenue =
+    deal.probability != null
+      ? (Number(deal.value) * Number(deal.probability)) / 100
+      : (Number(deal.value) * Number(stage.probability ?? 0)) / 100;
+
+  const { error } = await supabase
+    .from("crm_deals")
+    .update({
+      stage_id: stageId,
+      status,
+      closed_at: closedAt,
+      last_stage_changed_at: now,
+      expected_revenue: expectedRevenue,
+    })
+    .eq("id", dealId)
+    .eq("organization_id", orgId);
+
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon deal niet verplaatsen."),
+    };
+  }
+
+  await supabase.from("crm_deal_stage_history").insert({
+    organization_id: orgId,
+    deal_id: dealId,
+    from_stage_id: deal.stage_id,
+    to_stage_id: stageId,
+    from_status: deal.status,
+    to_status: status,
+    changed_by: user?.id ?? null,
+    metadata_json: { stageName: stage.name },
+  });
+
+  const { emitPipelineAutomationEvent } = await import(
+    "@/lib/crm/pipeline/automation"
+  );
+  await emitPipelineAutomationEvent(supabase, {
+    organizationId: orgId,
+    eventType: stage.is_won
+      ? "deal_won"
+      : stage.is_lost
+        ? "deal_lost"
+        : "stage_changed",
+    entityType: "crm_deal",
+    entityId: dealId,
+    payload: {
+      fromStageId: deal.stage_id,
+      toStageId: stageId,
+      status,
+      value: deal.value,
+    },
+  });
+
+  await logCrmActivity(supabase, {
+    organizationId: orgId,
+    userId: user?.id,
+    eventType: stage.is_won
+      ? "crm.deal.won"
+      : stage.is_lost
+        ? "crm.deal.lost"
+        : "crm.deal.stage_changed",
+    entityType: "crm_deal",
+    entityId: dealId,
+    description: `Deal verplaatst naar ${stage.name}`,
+    metadata: { fromStageId: deal.stage_id, toStageId: stageId, status },
+  });
+
+  if (Number(deal.value) >= 25000) {
+    await emitPipelineAutomationEvent(supabase, {
+      organizationId: orgId,
+      eventType: "large_opportunity",
+      entityType: "crm_deal",
+      entityId: dealId,
+      payload: { value: deal.value },
+    });
+  }
+
+  revalidateCrm([`/crm/deals/${dealId}`]);
+  return { success: true, message: "Deal stage bijgewerkt.", id: dealId };
+}
+
+export async function updateDealAction(
+  formData: FormData,
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const dealId = String(formData.get("deal_id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const value = Number(formData.get("value") ?? 0);
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const priority = String(formData.get("priority") ?? "normal");
+  const expectedClose = String(formData.get("expected_close_date") ?? "").trim();
+  const owner = String(formData.get("owner_user_id") ?? "").trim() || null;
+  const probabilityRaw = String(formData.get("probability") ?? "").trim();
+  const probability =
+    probabilityRaw === ""
+      ? null
+      : Math.max(0, Math.min(100, Number(probabilityRaw)));
+  const tags = parseTags(String(formData.get("tags") ?? ""));
+  const primaryContact =
+    String(formData.get("primary_contact_id") ?? "").trim() || null;
+
+  if (!dealId || !title) {
+    return { success: false, message: "Deal en titel zijn verplicht." };
+  }
+
+  const expectedRevenue =
+    probability != null && Number.isFinite(value)
+      ? (value * probability) / 100
+      : null;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("crm_deals")
+    .update({
+      title,
+      value: Number.isFinite(value) ? value : 0,
+      description,
+      priority,
+      expected_close_date: expectedClose || null,
+      owner_user_id: owner,
+      probability,
+      expected_revenue: expectedRevenue,
+      tags,
+      primary_contact_id: primaryContact,
+    })
+    .eq("organization_id", context.organization.id)
+    .eq("id", dealId);
+
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon deal niet bijwerken."),
+    };
+  }
+
+  revalidateCrm([`/crm/deals/${dealId}`]);
+  return { success: true, message: "Deal bijgewerkt.", id: dealId };
+}
+
+export async function closeDealAction(
+  formData: FormData,
+): Promise<CrmActionResult> {
+  const context = await getActiveOrganization();
+  if (!context) return { success: false, message: "Geen actieve organisatie." };
+
+  const dealId = String(formData.get("deal_id") ?? "");
+  const outcome = String(formData.get("outcome") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim();
+  const competitor = String(formData.get("competitor") ?? "").trim() || null;
+  const notes = String(formData.get("close_notes") ?? "").trim() || null;
+
+  if (!dealId || (outcome !== "won" && outcome !== "lost")) {
+    return { success: false, message: "Deal en uitkomst (won/lost) zijn verplicht." };
+  }
+  if (!reason) {
+    return { success: false, message: "Reden is verplicht." };
+  }
+
+  const supabase = await createClient();
+  const orgId = context.organization.id;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: deal } = await supabase
+    .from("crm_deals")
+    .select("*")
+    .eq("organization_id", orgId)
+    .eq("id", dealId)
+    .maybeSingle();
+  if (!deal) return { success: false, message: "Deal niet gevonden." };
+
+  const { data: stages } = await supabase
+    .from("crm_funnel_stages")
+    .select("*")
+    .eq("organization_id", orgId)
+    .eq("pipeline_id", deal.pipeline_id);
+
+  const target = (stages ?? []).find((s) =>
+    outcome === "won" ? s.is_won : s.is_lost,
+  );
+  if (!target) {
+    return {
+      success: false,
+      message: `Geen ${outcome === "won" ? "gewonnen" : "verloren"} stage in pipeline.`,
+    };
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("crm_deals")
+    .update({
+      stage_id: target.id,
+      status: outcome,
+      closed_at: now,
+      last_stage_changed_at: now,
+      won_reason: outcome === "won" ? reason : null,
+      lost_reason: outcome === "lost" ? reason : null,
+      competitor: outcome === "lost" ? competitor : null,
+      close_notes: notes,
+      probability: outcome === "won" ? 100 : 0,
+      expected_revenue: outcome === "won" ? Number(deal.value) : 0,
+    })
+    .eq("id", dealId)
+    .eq("organization_id", orgId);
+
+  if (error) {
+    return {
+      success: false,
+      message: toUserFacingError(error, "Kon deal niet afsluiten."),
+    };
+  }
+
+  await supabase.from("crm_deal_stage_history").insert({
+    organization_id: orgId,
+    deal_id: dealId,
+    from_stage_id: deal.stage_id,
+    to_stage_id: target.id,
+    from_status: deal.status,
+    to_status: outcome,
+    changed_by: user?.id ?? null,
+    note: reason,
+    metadata_json: { competitor, notes },
+  });
+
+  const { emitPipelineAutomationEvent } = await import(
+    "@/lib/crm/pipeline/automation"
+  );
+  await emitPipelineAutomationEvent(supabase, {
+    organizationId: orgId,
+    eventType: outcome === "won" ? "deal_won" : "deal_lost",
+    entityType: "crm_deal",
+    entityId: dealId,
+    payload: { reason, competitor },
+  });
+
+  await logCrmActivity(supabase, {
+    organizationId: orgId,
+    userId: user?.id,
+    eventType: outcome === "won" ? "crm.deal.won" : "crm.deal.lost",
+    entityType: "crm_deal",
+    entityId: dealId,
+    description: `Deal ${outcome}: ${reason}`,
+    metadata: { reason, competitor },
+  });
+
+  revalidateCrm([`/crm/deals/${dealId}`, "/crm/analytics"]);
+  return { success: true, message: `Deal gemarkeerd als ${outcome}.`, id: dealId };
 }

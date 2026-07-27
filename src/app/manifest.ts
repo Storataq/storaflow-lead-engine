@@ -12,10 +12,16 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: APP_SHORT_NAME,
     description: APP_DESCRIPTION,
     start_url: "/dashboard",
+    scope: "/",
+    id: "/",
     display: "standalone",
-    background_color: "#ffffff",
+    display_override: ["window-controls-overlay", "standalone", "minimal-ui"],
+    orientation: "any",
+    background_color: "#0f172a",
     theme_color: "#0f172a",
     lang: "nl",
+    categories: ["business", "productivity"],
+    prefer_related_applications: false,
     icons: [
       {
         src: "/icons/icon.svg",
@@ -23,7 +29,56 @@ export default function manifest(): MetadataRoute.Manifest {
         type: "image/svg+xml",
         purpose: "any",
       },
-      // TODO(branding): Add final icon-192.png and icon-512.png when artwork is ready.
+      {
+        src: "/icons/192",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icons/192",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "maskable",
+      },
+      {
+        src: "/icons/512",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icons/512",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+    ],
+    shortcuts: [
+      {
+        name: "Dashboard",
+        short_name: "Home",
+        url: "/dashboard",
+        icons: [{ src: "/icons/192", sizes: "192x192" }],
+      },
+      {
+        name: "CRM",
+        short_name: "CRM",
+        url: "/crm",
+        icons: [{ src: "/icons/192", sizes: "192x192" }],
+      },
+      {
+        name: "Tasks",
+        short_name: "Tasks",
+        url: "/crm/tasks",
+        icons: [{ src: "/icons/192", sizes: "192x192" }],
+      },
+      {
+        name: "AI Copilot",
+        short_name: "AI",
+        url: "/copilot",
+        icons: [{ src: "/icons/192", sizes: "192x192" }],
+      },
     ],
   };
 }

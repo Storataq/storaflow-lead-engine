@@ -174,6 +174,13 @@ export default async function EmailCampaignDetailPage({ params }: PageProps) {
         ]}
         actions={
           <div className="flex flex-wrap gap-2">
+            <Button
+              nativeButton={false}
+              variant="secondary"
+              render={<Link href={`/email/campaigns/${id}/builder`} />}
+            >
+              AI Builder
+            </Button>
             {!campaign.locked ? (
               <Button
                 nativeButton={false}

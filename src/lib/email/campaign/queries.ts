@@ -290,7 +290,7 @@ async function loadAudienceCandidates(
   const { data: leads } = await supabase
     .from("crm_leads")
     .select(
-      "id, company_name, owner_user_id, source, industry, city, country, tags, email, contact_name, notes",
+      "id, company_name, owner_user_id, source, industry, city, country, tags, email, contact_name, notes, lead_score, ai_lead_score",
     )
     .eq("organization_id", organizationId)
     .in("id", leadIds);
@@ -358,6 +358,7 @@ async function loadAudienceCandidates(
       qualificationScore: row.qualification_score,
       opportunityScore: row.opportunity_score,
       priorityScore: row.priority_score,
+      leadScore: Number(lead?.ai_lead_score ?? lead?.lead_score ?? 0) || 0,
       industry: lead?.industry ?? null,
       city: lead?.city ?? null,
       country: lead?.country ?? null,

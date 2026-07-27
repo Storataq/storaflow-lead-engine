@@ -4,12 +4,18 @@
 
 export const EMAIL_CAMPAIGN_TYPES = [
   "cold_outreach",
+  "lead_nurturing",
+  "welcome_series",
   "follow_up",
+  "re_engagement",
+  "event_invitation",
+  "sales_campaign",
+  "customer_success",
+  "retention",
+  "newsletter",
   "introduction",
   "pilot_invitation",
   "partnership",
-  "re_engagement",
-  "newsletter",
   "announcement",
   "custom",
 ] as const;
@@ -18,12 +24,18 @@ export type EmailCampaignType = (typeof EMAIL_CAMPAIGN_TYPES)[number];
 
 export const EMAIL_CAMPAIGN_TYPE_LABELS: Record<EmailCampaignType, string> = {
   cold_outreach: "Cold Outreach",
-  follow_up: "Follow-up",
+  lead_nurturing: "Lead Nurturing",
+  welcome_series: "Welcome Series",
+  follow_up: "Follow-up Sequence",
+  re_engagement: "Re-engagement",
+  event_invitation: "Event Invitation",
+  sales_campaign: "Sales Campaign",
+  customer_success: "Customer Success",
+  retention: "Retention",
+  newsletter: "Newsletter",
   introduction: "Introduction",
   pilot_invitation: "Pilot Invitation",
   partnership: "Partnership",
-  re_engagement: "Re-engagement",
-  newsletter: "Newsletter",
   announcement: "Announcement",
   custom: "Custom",
 };

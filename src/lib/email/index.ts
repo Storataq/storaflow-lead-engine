@@ -175,6 +175,19 @@ export {
   toCampaignRecipientPreview,
 } from "@/lib/email/crm-bridge";
 
+export {
+  BUILDER_BLOCK_TYPES,
+  BUILDER_BLOCK_LABELS,
+  MERGE_FIELDS,
+  AUTOMATION_TRIGGERS,
+  WAIT_UNITS,
+  emptyWorkflowGraph,
+  parseWorkflowGraph,
+  scoreSubjectLine,
+  buildCampaignRecommendations,
+  buildCampaignPerformanceWidgets,
+} from "@/lib/email/campaign-builder";
+
 /** @deprecated Prefer imports from `@/lib/email` — kept for Phase 20D compatibility. */
 export {
   EMAIL_ENGINE_INTEGRATION_POINTS,

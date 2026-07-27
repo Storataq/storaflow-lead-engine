@@ -50,6 +50,8 @@ export type CampaignAudienceDefinition = AudienceFilter & {
   qualificationMin?: number;
   opportunityMin?: number;
   opportunityMax?: number;
+  /** Phase 25E — minimum AI / CRM lead score */
+  leadScoreMin?: number;
   industries?: string[];
   countries?: string[];
   cities?: string[];
@@ -76,6 +78,7 @@ export type AudienceCandidate = {
   qualificationScore: number;
   opportunityScore: number;
   priorityScore: number;
+  leadScore: number;
   industry: string | null;
   city: string | null;
   country: string | null;
@@ -164,6 +167,8 @@ function applyRule(
         return candidate.language ?? "";
       case "qualificationScore":
         return candidate.qualificationScore;
+      case "leadScore":
+        return candidate.leadScore;
       case "opportunityScore":
         return candidate.opportunityScore;
       case "preferredEmail":
@@ -326,6 +331,9 @@ export function matchesAudienceDefinition(
   }
   if (typeof definition.opportunityMax === "number") {
     if (candidate.opportunityScore > definition.opportunityMax) return false;
+  }
+  if (typeof definition.leadScoreMin === "number") {
+    if (candidate.leadScore < definition.leadScoreMin) return false;
   }
 
   // AND groups (OR prepared for future)

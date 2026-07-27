@@ -56,7 +56,10 @@ export type OrgMemberOption = {
 export type CrmDealWithRelations = CrmDealRow & {
   lead: Pick<CrmLeadRow, "id" | "company_name" | "contact_name"> | null;
   pipeline: Pick<CrmPipelineRow, "id" | "name" | "color"> | null;
-  stage: Pick<CrmStageRow, "id" | "name" | "color"> | null;
+  stage: Pick<
+    CrmStageRow,
+    "id" | "name" | "color" | "probability" | "is_won" | "is_lost"
+  > | null;
 };
 
 async function withCrmReady(organizationId: string) {
@@ -67,14 +70,20 @@ async function withCrmReady(organizationId: string) {
 
 export async function listPipelines(
   organizationId: string,
+  options?: { includeArchived?: boolean },
 ): Promise<CrmPipelineRow[]> {
   const supabase = await withCrmReady(organizationId);
-  const { data, error } = await supabase
+  let query = supabase
     .from("crm_pipelines")
     .select("*")
     .eq("organization_id", organizationId)
     .order("sort_order", { ascending: true });
 
+  if (!options?.includeArchived) {
+    query = query.eq("is_archived", false);
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data ?? [];
 }
@@ -232,9 +241,13 @@ export async function listDeals(
 
 export async function listTasks(
   organizationId: string,
-  leadId?: string,
+  options?: string | { leadId?: string; dealId?: string },
 ): Promise<CrmTaskRow[]> {
   const supabase = await withCrmReady(organizationId);
+  const leadId =
+    typeof options === "string" ? options : options?.leadId;
+  const dealId = typeof options === "string" ? undefined : options?.dealId;
+
   let query = supabase
     .from("crm_tasks")
     .select("*")
@@ -244,6 +257,9 @@ export async function listTasks(
 
   if (leadId) {
     query = query.eq("lead_id", leadId);
+  }
+  if (dealId) {
+    query = query.eq("deal_id", dealId);
   }
 
   const { data, error } = await query;
@@ -355,7 +371,7 @@ export async function getDeal(
       .then((result) => result.data),
     supabase
       .from("crm_funnel_stages")
-      .select("id, name, color")
+      .select("id, name, color, probability, is_won, is_lost")
       .eq("id", data.stage_id)
       .maybeSingle()
       .then((result) => result.data),
@@ -402,7 +418,7 @@ export async function listDealsWithRelations(
         .in("id", pipelineIds),
       supabase
         .from("crm_funnel_stages")
-        .select("id, name, color")
+        .select("id, name, color, probability, is_won, is_lost")
         .eq("organization_id", organizationId)
         .in("id", stageIds),
     ]);
@@ -512,6 +528,85 @@ export async function getCrmDashboardStats(
     averageDealValue,
     dealsByStage,
   };
+}
+
+export async function listDealStageHistory(
+  organizationId: string,
+  dealId: string,
+) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("crm_deal_stage_history")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("deal_id", dealId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function listCloseReasons(
+  organizationId: string,
+  kind?: "won" | "lost",
+) {
+  const { ensureCloseReasons } = await import("@/lib/crm/bootstrap");
+  const supabase = await createClient();
+  await ensureCloseReasons(supabase, organizationId).catch(() => undefined);
+
+  let query = supabase
+    .from("crm_close_reasons")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+  if (kind) query = query.eq("kind", kind);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getPipelineAnalytics(organizationId: string) {
+  const { buildPipelineForecast } = await import("@/lib/crm/pipeline/forecast");
+  const supabase = await withCrmReady(organizationId);
+
+  const [{ data: deals }, { data: stages }] = await Promise.all([
+    supabase
+      .from("crm_deals")
+      .select(
+        "id, value, currency, status, probability, expected_close_date, closed_at, lost_reason, won_reason, stage_id, created_at, last_stage_changed_at",
+      )
+      .eq("organization_id", organizationId)
+      .limit(2000),
+    supabase
+      .from("crm_funnel_stages")
+      .select("id, name, color, probability")
+      .eq("organization_id", organizationId),
+  ]);
+
+  const stageMap = new Map((stages ?? []).map((s) => [s.id, s]));
+  const rows = (deals ?? []).map((deal) => {
+    const stage = stageMap.get(deal.stage_id);
+    return {
+      id: deal.id,
+      value: Number(deal.value ?? 0),
+      currency: deal.currency ?? "EUR",
+      status: deal.status,
+      probability: deal.probability != null ? Number(deal.probability) : null,
+      stageProbability: stage?.probability != null ? Number(stage.probability) : null,
+      expectedCloseDate: deal.expected_close_date,
+      closedAt: deal.closed_at,
+      lostReason: deal.lost_reason,
+      wonReason: deal.won_reason,
+      stageId: deal.stage_id,
+      stageName: stage?.name ?? "Unknown",
+      stageColor: stage?.color ?? "#64748b",
+      createdAt: deal.created_at,
+      lastStageChangedAt: deal.last_stage_changed_at,
+    };
+  });
+
+  return buildPipelineForecast(rows);
 }
 
 export async function listLeadContacts(

@@ -6,9 +6,11 @@ import { ConvertCompanyToLeadButton } from "@/components/crm/convert-company-to-
 import { FunnelActivationPanel } from "@/components/crm/funnel-activation-panel";
 import { CategoryIntelligencePanel } from "@/components/companies/category-intelligence-panel";
 import { CompanyCategoryCard } from "@/components/companies/company-category-card";
+import { CompanyIntelligenceSection } from "@/components/companies/company-intelligence-section";
 import { WebsiteEnrichmentPanel } from "@/components/companies/website-enrichment-panel";
 import { TruncatedText } from "@/components/layout/truncated-text";
 import { PageHeader } from "@/components/layout/page-header";
+import { ShareButton } from "@/components/pwa/share-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -219,7 +221,7 @@ export default async function CompanyDetailPage({
     <div>
       <PageHeader
         title={company.company_name}
-        description="Bedrijfsprofiel, website enrichment en funnel activation."
+        description="Bedrijfsprofiel, AI intelligence, website enrichment en funnel activation."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "Bedrijven", href: "/companies" },
@@ -227,6 +229,13 @@ export default async function CompanyDetailPage({
         ]}
         actions={
           <div className="flex flex-wrap gap-2">
+            <ShareButton
+              payload={{
+                title: company.company_name,
+                text: `Company: ${company.company_name}`,
+                url: `/companies/${company.id}`,
+              }}
+            />
             <ConvertCompanyToLeadButton companyId={company.id} />
             <Button
               nativeButton={false}
@@ -263,6 +272,12 @@ export default async function CompanyDetailPage({
           classifiedAt={company.category_classified_at}
           classifiedBy={company.category_classified_by}
           canManage={canAssign}
+        />
+        <CompanyIntelligenceSection
+          organizationId={context.organization.id}
+          companyId={company.id}
+          canManage={canAssign}
+          companyStatusHint={company.intelligence_status}
         />
         <WebsiteEnrichmentPanel
           companyId={company.id}

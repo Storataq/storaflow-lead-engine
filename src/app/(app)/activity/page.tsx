@@ -2,51 +2,46 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Activity } from "lucide-react";
 
+import { CollaborationSubnav } from "@/components/collaboration/collaboration-subnav";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
+import { COLLAB_UI } from "@/lib/collaboration/constants";
+import { getUnifiedActivityFeed } from "@/lib/collaboration/queries";
 import { getActiveOrganization } from "@/lib/organizations/get-active-organization";
-import { createClient } from "@/lib/supabase/server";
 import { formatDateTime, formatStatusLabel } from "@/lib/ui/format";
 
 export const metadata: Metadata = {
-  title: "Activiteiten",
+  title: COLLAB_UI.activityTitle,
 };
 
 export default async function ActivityPage() {
   const context = await getActiveOrganization();
   const events = context
-    ? await (async () => {
-        const supabase = await createClient();
-        const { data } = await supabase
-          .from("activity_events")
-          .select("*")
-          .eq("organization_id", context.organization.id)
-          .order("created_at", { ascending: false })
-          .limit(100);
-        return data ?? [];
-      })().catch(() => [])
+    ? await getUnifiedActivityFeed(context.organization.id, 100)
     : [];
 
   return (
     <div>
       <PageHeader
-        title="Activiteiten"
-        description="Auditlog van acties binnen je organisatie, inclusief CRM-gebeurtenissen."
+        title={COLLAB_UI.activityTitle}
+        description="Unified feed: CRM actions, comments, mentions, uploads, and collaboration audit events."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
-          { label: "Activiteiten" },
+          { label: COLLAB_UI.hubTitle, href: "/collaboration" },
+          { label: COLLAB_UI.activityTitle },
         ]}
       />
+      <CollaborationSubnav />
       {events.length === 0 ? (
         <EmptyState
           icon={Activity}
           title="Nog geen activiteiten"
-          description="Gebeurtenissen zoals lead-aanmaak, stage-wijzigingen en taken verschijnen hier."
-          actionLabel="Naar CRM"
-          actionHref="/crm/leads"
-          secondaryActionLabel="Naar zoekopdrachten"
-          secondaryActionHref="/zoekopdrachten"
+          description="Gebeurtenissen zoals lead-aanmaak, comments, mentions en uploads verschijnen hier."
+          actionLabel="Naar Collaboration"
+          actionHref="/collaboration"
+          secondaryActionLabel="Naar CRM"
+          secondaryActionHref="/crm/leads"
         />
       ) : (
         <ul className="space-y-3">
@@ -56,20 +51,31 @@ export default async function ActivityPage() {
               className="rounded-xl border border-border px-4 py-3 text-sm"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Badge variant="secondary">
-                  {formatStatusLabel(event.event_type)}
-                </Badge>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary">
+                    {formatStatusLabel(event.eventType)}
+                  </Badge>
+                  <Badge variant="outline">{event.source}</Badge>
+                </div>
                 <span className="text-xs text-muted-foreground">
-                  {formatDateTime(event.created_at)}
+                  {formatDateTime(event.createdAt)}
                 </span>
               </div>
               <p className="mt-2 text-muted-foreground">{event.description}</p>
-              {event.entity_type === "crm_lead" && event.entity_id ? (
+              {event.entityType === "crm_lead" && event.entityId ? (
                 <Link
-                  href={`/crm/leads/${event.entity_id}`}
+                  href={`/crm/leads/${event.entityId}`}
                   className="mt-2 inline-block text-xs font-medium underline-offset-4 hover:underline"
                 >
                   Bekijk lead
+                </Link>
+              ) : null}
+              {event.entityType === "deal" && event.entityId ? (
+                <Link
+                  href={`/crm/deals/${event.entityId}`}
+                  className="mt-2 inline-block text-xs font-medium underline-offset-4 hover:underline"
+                >
+                  Bekijk deal
                 </Link>
               ) : null}
             </li>

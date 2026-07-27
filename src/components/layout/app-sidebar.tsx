@@ -7,31 +7,50 @@ import { ChevronDown } from "lucide-react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
 import { navIconMap, type NavIconName } from "@/components/layout/nav-icons";
-import { NAV_ITEMS, APP_POWERED_BY } from "@/lib/constants";
+import { APP_POWERED_BY, type NavItem } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 type AppSidebarProps = {
   organizationName: string;
+  productName?: string | null;
+  logoUrl?: string | null;
+  poweredBy?: string | null;
+  navItems: readonly NavItem[];
 };
 
-export function AppSidebar({ organizationName }: AppSidebarProps) {
+export function AppSidebar({
+  organizationName,
+  productName,
+  logoUrl,
+  poweredBy,
+  navItems,
+}: AppSidebarProps) {
   const pathname = usePathname();
   const crmOpenDefault = pathname.startsWith("/crm");
   const [crmOpen, setCrmOpen] = useState(crmOpenDefault);
+  const collabOpenDefault = pathname.startsWith("/collaboration") || pathname === "/activity";
+  const [collabOpen, setCollabOpen] = useState(collabOpenDefault);
+  const securityOpenDefault = pathname.startsWith("/security");
+  const [securityOpen, setSecurityOpen] = useState(securityOpenDefault);
 
   return (
     <aside className="hidden w-60 shrink-0 border-r border-border bg-sidebar text-sidebar-foreground lg:flex lg:flex-col">
       <div className="flex h-14 items-center border-b border-sidebar-border px-5">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <BrandMark href="/dashboard" />
+          <BrandMark
+            href="/dashboard"
+            productName={productName}
+            logoUrl={logoUrl}
+          />
           <span className="truncate pl-9 text-xs text-muted-foreground">
             {organizationName}
           </span>
         </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-        {NAV_ITEMS.map((item) => {
-          const Icon = navIconMap[item.icon as NavIconName];
+        {navItems.map((item) => {
+          const Icon =
+            navIconMap[item.icon as NavIconName] ?? navIconMap.Sparkles;
           const hasChildren = Boolean(item.children?.length);
           const active =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -54,7 +73,14 @@ export function AppSidebar({ organizationName }: AppSidebarProps) {
             );
           }
 
-          const open = item.href === "/crm" ? crmOpen || active : active;
+          const open =
+            item.href === "/crm"
+              ? crmOpen || active
+              : item.href === "/collaboration"
+                ? collabOpen || active
+                : item.href === "/security"
+                  ? securityOpen || active
+                  : active;
 
           return (
             <div key={item.href} className="space-y-1">
@@ -68,10 +94,20 @@ export function AppSidebar({ organizationName }: AppSidebarProps) {
                 )}
                 aria-expanded={open}
                 aria-controls={
-                  item.href === "/crm" ? "crm-nav-children" : undefined
+                  item.href === "/crm"
+                    ? "crm-nav-children"
+                    : item.href === "/collaboration"
+                      ? "collab-nav-children"
+                      : item.href === "/security"
+                        ? "security-nav-children"
+                        : undefined
                 }
                 onClick={() => {
                   if (item.href === "/crm") setCrmOpen((value) => !value);
+                  if (item.href === "/collaboration")
+                    setCollabOpen((value) => !value);
+                  if (item.href === "/security")
+                    setSecurityOpen((value) => !value);
                 }}
               >
                 <Icon className="size-4 shrink-0" aria-hidden />
@@ -86,11 +122,21 @@ export function AppSidebar({ organizationName }: AppSidebarProps) {
               </button>
               {open ? (
                 <div
-                  id={item.href === "/crm" ? "crm-nav-children" : undefined}
+                  id={
+                    item.href === "/crm"
+                      ? "crm-nav-children"
+                      : item.href === "/collaboration"
+                        ? "collab-nav-children"
+                        : item.href === "/security"
+                          ? "security-nav-children"
+                          : undefined
+                  }
                   className="space-y-1"
                 >
                   {item.children?.map((child) => {
-                    const ChildIcon = navIconMap[child.icon as NavIconName];
+                    const ChildIcon =
+                      navIconMap[child.icon as NavIconName] ??
+                      navIconMap.Sparkles;
                     const childActive =
                       child.href === item.href
                         ? pathname === child.href
@@ -121,7 +167,7 @@ export function AppSidebar({ organizationName }: AppSidebarProps) {
       </nav>
       <div className="border-t border-sidebar-border p-4 text-xs text-muted-foreground">
         <p>Alleen publieke zakelijke gegevens</p>
-        <p className="mt-1">{APP_POWERED_BY}</p>
+        <p className="mt-1">{poweredBy?.trim() || APP_POWERED_BY}</p>
       </div>
     </aside>
   );

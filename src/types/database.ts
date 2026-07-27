@@ -1,4 +1,4 @@
-export type OrganizationRole = "owner" | "admin";
+export type OrganizationRole = "owner" | "admin" | "member" | "viewer";
 
 export type SearchQueryStatus =
   | "draft"

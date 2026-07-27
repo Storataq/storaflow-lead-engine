@@ -172,18 +172,18 @@ export default async function DashboardPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         {stats.map((stat) => (
           <Link key={stat.label} href={stat.href} className="group">
             <Card className="h-full shadow-none transition-colors group-hover:bg-muted/30">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1 sm:p-6 sm:pb-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">
                   {stat.label}
                 </CardTitle>
                 <stat.icon className="size-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-semibold tracking-tight">
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-2xl font-semibold tracking-tight sm:text-3xl">
                   {stat.value}
                 </div>
               </CardContent>
@@ -350,18 +350,18 @@ export default async function DashboardPage() {
       <h2 className="mt-8 mb-3 text-sm font-medium text-muted-foreground">
         CRM
       </h2>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
         {crmWidgets.map((stat) => (
           <Link key={stat.label} href={stat.href} className="group">
             <Card className="h-full shadow-none transition-colors group-hover:bg-muted/30">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 pb-1 sm:p-6 sm:pb-2">
+                <CardTitle className="text-xs font-medium text-muted-foreground sm:text-sm">
                   {stat.label}
                 </CardTitle>
                 <stat.icon className="size-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-semibold tracking-tight">
+              <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                <div className="text-xl font-semibold tracking-tight sm:text-2xl">
                   {stat.value}
                 </div>
               </CardContent>

@@ -54,6 +54,8 @@ export function CampaignsManager({
   const [status, setStatus] = useState("all");
   const [type, setType] = useState("all");
   const [language, setLanguage] = useState("all");
+  const [tag, setTag] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("all");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -62,11 +64,24 @@ export function CampaignsManager({
     [campaigns],
   );
 
+  const owners = useMemo(
+    () =>
+      [...new Set(campaigns.map((c) => c.owner_user_id).filter(Boolean))].sort(),
+    [campaigns],
+  );
+
   const filtered = useMemo(() => {
     return campaigns.filter((row) => {
       if (status !== "all" && row.status !== status) return false;
       if (type !== "all" && row.campaign_type !== type) return false;
       if (language !== "all" && row.language !== language) return false;
+      if (ownerFilter !== "all" && row.owner_user_id !== ownerFilter) return false;
+      if (tag.trim()) {
+        const needle = tag.trim().toLowerCase();
+        if (!(row.tags ?? []).some((t) => t.toLowerCase().includes(needle))) {
+          return false;
+        }
+      }
       if (query.trim()) {
         const needle = query.trim().toLowerCase();
         const hay = [
@@ -75,6 +90,7 @@ export function CampaignsManager({
           row.objective ?? "",
           row.campaign_type,
           row.status,
+          ...(row.tags ?? []),
         ]
           .join(" ")
           .toLowerCase();
@@ -82,7 +98,7 @@ export function CampaignsManager({
       }
       return true;
     });
-  }, [campaigns, query, status, type, language]);
+  }, [campaigns, query, status, type, language, tag, ownerFilter]);
 
   if (initialError) {
     return (
@@ -95,7 +111,7 @@ export function CampaignsManager({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div className="grid flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div>
             <label htmlFor="c-search" className="mb-1 block text-xs text-muted-foreground">
               Search
@@ -104,7 +120,7 @@ export function CampaignsManager({
               id="c-search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Name, description…"
+              placeholder="Name, description, tags…"
             />
           </div>
           <div>
@@ -161,8 +177,44 @@ export function CampaignsManager({
               ))}
             </select>
           </div>
+          <div>
+            <label htmlFor="c-owner" className="mb-1 block text-xs text-muted-foreground">
+              Owner
+            </label>
+            <select
+              id="c-owner"
+              className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              value={ownerFilter}
+              onChange={(e) => setOwnerFilter(e.target.value)}
+            >
+              <option value="all">All</option>
+              {owners.map((ownerId) => (
+                <option key={String(ownerId)} value={String(ownerId)}>
+                  {String(ownerId).slice(0, 8)}…
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="c-tag" className="mb-1 block text-xs text-muted-foreground">
+              Tag
+            </label>
+            <Input
+              id="c-tag"
+              value={tag}
+              onChange={(e) => setTag(e.target.value)}
+              placeholder="sales"
+            />
+          </div>
         </div>
         <div className="flex gap-2">
+          <Button
+            nativeButton={false}
+            variant="outline"
+            render={<Link href="/email/campaigns/new/builder" />}
+          >
+            AI Builder
+          </Button>
           <Button
             nativeButton={false}
             variant="outline"
@@ -247,6 +299,16 @@ export function CampaignsManager({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <Button
+                        nativeButton={false}
+                        size="sm"
+                        variant="ghost"
+                        render={
+                          <Link href={`/email/campaigns/${row.id}/builder`} />
+                        }
+                      >
+                        Builder
+                      </Button>
                       <Button
                         type="button"
                         size="sm"

@@ -5,6 +5,7 @@ Placeholder Storaflow mark until final artwork is delivered.
 | File | Purpose |
 |------|---------|
 | `icon.svg` | PWA / manifest icon (placeholder “S”) |
+| `/icons/192` · `/icons/512` | Dynamic PNG icons for install (ImageResponse) |
 
 ## TODO
 

@@ -1019,12 +1019,18 @@ export function LeadWorkspace({
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div className="space-y-1 text-sm">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-medium">
+                            <Link
+                              href={`/crm/contacts/${contact.id}`}
+                              className="font-medium underline-offset-4 hover:underline"
+                            >
                               {`${contact.first_name} ${contact.last_name}`.trim() ||
                                 "Naamloos"}
-                            </p>
+                            </Link>
                             {contact.is_primary ? (
                               <Badge variant="secondary">Primair</Badge>
+                            ) : null}
+                            {contact.is_decision_maker ? (
+                              <Badge variant="outline">Decision Maker</Badge>
                             ) : null}
                           </div>
                           <p className="text-muted-foreground">
@@ -1034,6 +1040,19 @@ export function LeadWorkspace({
                             {displayValue(contact.email)} ·{" "}
                             {displayValue(contact.phone)}
                           </p>
+                          {(contact.health_score != null ||
+                            contact.quality_score != null) && (
+                            <p className="text-xs text-muted-foreground">
+                              Health{" "}
+                              {contact.health_score != null
+                                ? Math.round(Number(contact.health_score))
+                                : "—"}{" "}
+                              · Quality{" "}
+                              {contact.quality_score != null
+                                ? Math.round(Number(contact.quality_score))
+                                : "—"}
+                            </p>
+                          )}
                           {contact.linkedin_url ? (
                             <a
                               href={contact.linkedin_url}
@@ -1046,6 +1065,17 @@ export function LeadWorkspace({
                           ) : null}
                         </div>
                         <div className="flex gap-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            nativeButton={false}
+                            render={
+                              <Link href={`/crm/contacts/${contact.id}`} />
+                            }
+                          >
+                            Intelligence
+                          </Button>
                           <Button
                             type="button"
                             size="icon-sm"

@@ -6,6 +6,7 @@ import { GitBranch } from "lucide-react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/layout/empty-state";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,7 +17,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createPipelineAction } from "@/lib/crm/actions";
+import {
+  archivePipelineAction,
+  createPipelineAction,
+  updatePipelineAction,
+} from "@/lib/crm/actions";
 import type { CrmPipelineRow } from "@/lib/crm/queries";
 
 type PipelinesManagerProps = {
@@ -30,6 +35,30 @@ export function PipelinesManager({ pipelines }: PipelinesManagerProps) {
   async function onCreate(formData: FormData) {
     startTransition(async () => {
       const result = await createPipelineAction(formData);
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      toast.success(result.message);
+      router.refresh();
+    });
+  }
+
+  async function onUpdate(formData: FormData) {
+    startTransition(async () => {
+      const result = await updatePipelineAction(formData);
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      toast.success(result.message);
+      router.refresh();
+    });
+  }
+
+  function onArchive(pipelineId: string, archive: boolean) {
+    startTransition(async () => {
+      const result = await archivePipelineAction(pipelineId, archive);
       if (!result.success) {
         toast.error(result.message);
         return;
@@ -53,7 +82,15 @@ export function PipelinesManager({ pipelines }: PipelinesManagerProps) {
             <Card key={pipeline.id} className="shadow-none">
               <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
                 <div>
-                  <CardTitle className="text-base">{pipeline.name}</CardTitle>
+                  <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+                    {pipeline.name}
+                    {pipeline.is_default ? (
+                      <Badge variant="secondary">Default</Badge>
+                    ) : null}
+                    {pipeline.is_archived ? (
+                      <Badge variant="outline">Archived</Badge>
+                    ) : null}
+                  </CardTitle>
                   <CardDescription>
                     {pipeline.description ?? "Geen beschrijving"}
                   </CardDescription>
@@ -64,9 +101,58 @@ export function PipelinesManager({ pipelines }: PipelinesManagerProps) {
                   aria-hidden
                 />
               </CardHeader>
-              <CardContent className="text-sm text-muted-foreground">
-                slug: {pipeline.slug}
-                {pipeline.is_default ? " · standaard" : ""}
+              <CardContent className="space-y-3">
+                <form
+                  action={onUpdate}
+                  className="grid gap-2 sm:grid-cols-2"
+                >
+                  <input type="hidden" name="pipeline_id" value={pipeline.id} />
+                  <div className="space-y-1">
+                    <Label htmlFor={`name-${pipeline.id}`}>Name</Label>
+                    <Input
+                      id={`name-${pipeline.id}`}
+                      name="name"
+                      defaultValue={pipeline.name}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor={`color-${pipeline.id}`}>Color</Label>
+                    <Input
+                      id={`color-${pipeline.id}`}
+                      name="color"
+                      type="color"
+                      defaultValue={pipeline.color}
+                    />
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label htmlFor={`desc-${pipeline.id}`}>Description</Label>
+                    <Input
+                      id={`desc-${pipeline.id}`}
+                      name="description"
+                      defaultValue={pipeline.description ?? ""}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2 sm:col-span-2">
+                    <Button type="submit" size="sm" disabled={pending}>
+                      Save
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={pending}
+                      onClick={() =>
+                        onArchive(pipeline.id, !pipeline.is_archived)
+                      }
+                    >
+                      {pipeline.is_archived ? "Restore" : "Archive"}
+                    </Button>
+                  </div>
+                </form>
+                <p className="text-xs text-muted-foreground">
+                  slug: {pipeline.slug}
+                </p>
               </CardContent>
             </Card>
           ))
@@ -84,7 +170,12 @@ export function PipelinesManager({ pipelines }: PipelinesManagerProps) {
           <form action={onCreate} className="space-y-3">
             <div className="space-y-2">
               <Label htmlFor="name">Naam</Label>
-              <Input id="name" name="name" required placeholder="bijv. Enterprise" />
+              <Input
+                id="name"
+                name="name"
+                required
+                placeholder="bijv. Enterprise"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Beschrijving</Label>
@@ -92,7 +183,12 @@ export function PipelinesManager({ pipelines }: PipelinesManagerProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="color">Kleur</Label>
-              <Input id="color" name="color" type="color" defaultValue="#2563eb" />
+              <Input
+                id="color"
+                name="color"
+                type="color"
+                defaultValue="#2563eb"
+              />
             </div>
             <Button type="submit" disabled={pending} className="w-full">
               {pending ? "Opslaan…" : "Pipeline toevoegen"}

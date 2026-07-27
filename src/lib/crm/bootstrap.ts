@@ -78,6 +78,8 @@ export async function ensureDefaultCrmSetup(
           sort_order: stage.sortOrder,
           is_won: "isWon" in stage ? Boolean(stage.isWon) : false,
           is_lost: "isLost" in stage ? Boolean(stage.isLost) : false,
+          probability:
+            "probability" in stage ? Number(stage.probability ?? 0) : 0,
         });
 
       if (stageError) {
@@ -85,4 +87,43 @@ export async function ensureDefaultCrmSetup(
       }
     }
   }
+}
+
+export async function ensureCloseReasons(
+  supabase: Client,
+  organizationId: string,
+): Promise<void> {
+  const { DEFAULT_LOST_REASONS, DEFAULT_WON_REASONS } = await import(
+    "@/lib/crm/pipeline/constants"
+  );
+
+  const { data: existing } = await supabase
+    .from("crm_close_reasons")
+    .select("kind, code")
+    .eq("organization_id", organizationId);
+
+  const have = new Set(
+    (existing ?? []).map((row) => `${row.kind}:${row.code}`),
+  );
+
+  const rows = [
+    ...DEFAULT_WON_REASONS.map((reason, index) => ({
+      organization_id: organizationId,
+      kind: "won" as const,
+      code: reason.code,
+      label: reason.label,
+      sort_order: index,
+    })),
+    ...DEFAULT_LOST_REASONS.map((reason, index) => ({
+      organization_id: organizationId,
+      kind: "lost" as const,
+      code: reason.code,
+      label: reason.label,
+      sort_order: index,
+    })),
+  ].filter((row) => !have.has(`${row.kind}:${row.code}`));
+
+  if (rows.length === 0) return;
+  const { error } = await supabase.from("crm_close_reasons").insert(rows);
+  if (error) throw new Error(error.message);
 }

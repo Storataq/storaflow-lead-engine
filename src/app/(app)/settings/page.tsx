@@ -104,6 +104,95 @@ export default function SettingsPage() {
         </Card>
         <Card className="shadow-none">
           <CardHeader>
+            <CardTitle className="text-base">Security</CardTitle>
+            <CardDescription>
+              MFA, sessions, devices, SSO, access policies, RBAC, and enterprise
+              audit logs.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link href="/security" />}
+            >
+              Open Security dashboard
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="shadow-none">
+          <CardHeader>
+            <CardTitle className="text-base">Billing</CardTitle>
+            <CardDescription>
+              Plans, trials, seats, usage, invoices, Stripe portal, and upgrades.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link href="/billing" />}
+            >
+              Open Billing dashboard
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="shadow-none">
+          <CardHeader>
+            <CardTitle className="text-base">Mobile & PWA</CardTitle>
+            <CardDescription>
+              Install app, offline queue, push notifications, and device
+              capabilities.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link href="/settings/mobile" />}
+            >
+              Open Mobile & PWA settings
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="shadow-none">
+          <CardHeader>
+            <CardTitle className="text-base">White Label</CardTitle>
+            <CardDescription>
+              Rebrand logos, colors, fonts, domains, feature toggles, and email
+              for partners and enterprises.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link href="/settings/white-label" />}
+            >
+              Open White Label settings
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="shadow-none">
+          <CardHeader>
+            <CardTitle className="text-base">API & Webhooks</CardTitle>
+            <CardDescription>
+              Manage API keys, outbound webhooks, usage, and OpenAPI docs for
+              partner integrations.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link href="/api-management" />}
+            >
+              Open API Management
+            </Button>
+          </CardContent>
+        </Card>
+        <Card className="shadow-none">
+          <CardHeader>
             <CardTitle className="text-base">AI & email intelligence</CardTitle>
             <CardDescription>
               Beheer AI feature flags, budgetten en veiligheidsinstellingen voor

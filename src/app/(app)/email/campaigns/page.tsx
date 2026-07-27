@@ -68,12 +68,28 @@ export default async function EmailCampaignsPage() {
           { label: "Campaigns" },
         ]}
         actions={
-          <Button
-            nativeButton={false}
-            render={<Link href="/email/campaigns/new/wizard" />}
-          >
-            New campaign
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link href="/email/campaigns/new/builder" />}
+            >
+              AI Builder
+            </Button>
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={<Link href="/email/campaigns/calendar" />}
+            >
+              Calendar
+            </Button>
+            <Button
+              nativeButton={false}
+              render={<Link href="/email/campaigns/new/wizard" />}
+            >
+              New campaign
+            </Button>
+          </div>
         }
       />
       <EmailSubnav currentPath="/email/campaigns" />

@@ -128,3 +128,33 @@
     @apply font-sans;
   }
 }
+
+/* Phase 26H — mobile / PWA helpers */
+@layer utilities {
+  .touch-target {
+    @apply min-h-11 min-w-11 touch-manipulation;
+  }
+  .safe-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-pt {
+    padding-top: env(safe-area-inset-top);
+  }
+  .mobile-kpi-grid {
+    @apply grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4;
+  }
+  .mobile-card-stack {
+    @apply flex flex-col gap-3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -3,10 +3,15 @@ import { notFound } from "next/navigation";
 
 import { CrmSubnav } from "@/components/crm/crm-subnav";
 import { LeadFunnelReadinessCard } from "@/components/crm/lead-funnel-readiness-card";
+import { LeadScoringPanel } from "@/components/crm/lead-scoring-panel";
 import { LeadWorkspace } from "@/components/crm/lead-workspace";
 import { PageHeader } from "@/components/layout/page-header";
 import { ReloadErrorAlert } from "@/components/layout/reload-error-alert";
 import { getCampaignReadinessForLead } from "@/lib/crm/funnel-activation/queries";
+import {
+  getLeadScoringProfile,
+  listLeadScoreHistory,
+} from "@/lib/crm/lead-scoring/queries";
 import { buildOpportunityRecord } from "@/lib/crm/opportunity-insights";
 import { qualifyLead } from "@/lib/crm/qualification";
 import {
@@ -117,6 +122,8 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     missingRequirements: string[];
   } | null = null;
   let nextBestAction = "Review lead";
+  let scoringProfile: Awaited<ReturnType<typeof getLeadScoringProfile>> = null;
+  let scoringHistory: Awaited<ReturnType<typeof listLeadScoreHistory>> = [];
 
   try {
     const [
@@ -129,6 +136,8 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
       contactsResult,
       enrichmentResult,
       membersResult,
+      scoringProfileResult,
+      scoringHistoryResult,
     ] = await Promise.all([
       listPipelines(orgId),
       listAllStages(orgId),
@@ -139,6 +148,8 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
       listLeadContacts(orgId, id),
       getLeadCompanyEnrichment(orgId, lead.company_id),
       listOrganizationMembers(orgId),
+      getLeadScoringProfile(orgId, id).catch(() => null),
+      listLeadScoreHistory(orgId, id, 20).catch(() => []),
     ]);
 
     pipelines = pipelinesResult;
@@ -150,6 +161,8 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     contacts = contactsResult;
     enrichment = enrichmentResult;
     members = membersResult;
+    scoringProfile = scoringProfileResult;
+    scoringHistory = scoringHistoryResult;
 
     const readinessRow = await getCampaignReadinessForLead(orgId, id).catch(
       () => null,
@@ -182,7 +195,7 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
     <div>
       <PageHeader
         title={lead.company_name}
-        description="Funnel readiness, intelligence, timeline, notes, tasks and deals."
+        description="Funnel readiness, AI lead scoring, timeline, notes, tasks and deals."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "CRM", href: "/crm" },
@@ -201,6 +214,14 @@ export default async function LeadDetailPage({ params }: LeadDetailPageProps) {
           leadId={lead.id}
           readiness={readiness}
           nextBestAction={nextBestAction}
+        />
+      </div>
+      <div className="mb-6">
+        <LeadScoringPanel
+          leadId={lead.id}
+          profile={scoringProfile}
+          history={scoringHistory}
+          fallbackScore={lead.ai_lead_score ?? lead.lead_score}
         />
       </div>
       <LeadWorkspace

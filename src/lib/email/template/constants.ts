@@ -11,6 +11,11 @@ export const EMAIL_TEMPLATE_CATEGORIES = [
   "appointment",
   "partnership",
   "newsletter",
+  "sales",
+  "marketing",
+  "support",
+  "announcement",
+  "seasonal",
   "custom",
   "future",
 ] as const;
@@ -26,6 +31,11 @@ export const EMAIL_TEMPLATE_CATEGORY_LABELS: Record<EmailTemplateCategory, strin
   appointment: "Appointment",
   partnership: "Partnership",
   newsletter: "Newsletter",
+  sales: "Sales",
+  marketing: "Marketing",
+  support: "Support",
+  announcement: "Announcement",
+  seasonal: "Seasonal",
   custom: "Custom",
   future: "Future Categories",
 };

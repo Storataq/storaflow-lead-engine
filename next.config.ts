@@ -10,7 +10,8 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
+            value:
+              "camera=(self), microphone=(self), geolocation=(self), clipboard-write=(self)",
           },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
         ],
@@ -36,6 +37,19 @@ const nextConfig: NextConfig = {
       {
         source: "/api/internal/:path*",
         headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+      {
+        source: "/icons/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400" },
+        ],
       },
     ];
   },

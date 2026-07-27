@@ -27,6 +27,7 @@ import type {
   CrmLeadWithRelations,
   CrmStageRow,
 } from "@/lib/crm/queries";
+import { LeadScoreBadge } from "@/components/crm/lead-score-badge";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -62,7 +63,10 @@ function LeadCard({
         <p className="mt-1 text-xs text-muted-foreground">{lead.contact_name}</p>
       ) : null}
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <Badge variant="secondary">Score {lead.lead_score}</Badge>
+        <LeadScoreBadge
+          score={lead.ai_lead_score ?? lead.lead_score}
+          classification={lead.score_classification}
+        />
         {lead.deal_value > 0 ? (
           <span className="text-xs text-muted-foreground">
             {formatDealValue(Number(lead.deal_value), lead.currency)}

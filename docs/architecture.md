@@ -32,10 +32,18 @@ Auth + Organization (RLS)
         ├─ Automated Email Engine (21A–21K)
         │         └─ templates / campaigns / sequences / queue / Resend / tracking /
         │            preferences / analytics / optional AI drafts (human review; no auto-send)
+        │            + AI Campaign Builder (25D) visual workflow / A/B / subject scores
         │
         └─ CRM (leads, pipeline, deals, tasks, notes, funnels)
                 │
                 ├─ Company Intelligence / Sources / Enrichment
+                ├─ AI Company Intelligence profiles (25A)
+                ├─ AI Contact Intelligence profiles (25B)
+                ├─ Advanced sales pipelines / deal Kanban / forecast (25C)
+                ├─ AI Lead Scoring Engine (25E) — weighted / explainable scores
+                ├─ AI Sales Automation Engine (25F) — workflows on outbox events
+                ├─ Executive Analytics Dashboard (25G) — BI over live modules
+                ├─ AI Copilot (25H) — NL assistant + confirmed actions
                 ├─ Qualification engine (deterministic)
                 ├─ Opportunity Insights + NBA (deterministic)
                 ├─ Campaign Ready queue (no send)
@@ -55,6 +63,25 @@ Auth + Organization (RLS)
 | `src/lib/crm/funnel-activation/` | Funnel orchestrator + campaign readiness (20D) |
 | `src/lib/email/` | Automated Email Engine (templates → AI assistance) |
 | `src/lib/email/ai/` | Phase 21K provider-agnostic AI layer |
+| `src/lib/email/campaign-builder/` | Phase 25D visual AI campaign builder |
+| `src/lib/companies/intelligence/` | Phase 25A AI company profiles / health / lead scores |
+| `src/lib/crm/contact-intelligence/` | Phase 25B AI CRM contact profiles / DM / quality |
+| `src/lib/crm/pipeline/` | Phase 25C forecast, NBA, automation outbox |
+| `src/lib/crm/lead-scoring/` | Phase 25E weighted AI lead scoring engine |
+| `src/lib/crm/automation/` | Phase 25F sales automation engine / processor |
+| `src/lib/crm/executive-analytics/` | Phase 25G executive BI / KPI bundle |
+| `src/lib/copilot/` | Phase 25H AI Copilot engine / tools / safety |
+| `src/lib/integrations/` | Phase 25I Integrations Marketplace / OAuth / sync |
+| `src/lib/platform-api/` | Phase 26B public REST API / webhooks / keys |
+| `src/lib/billing/` | Phase 26F billing / subscriptions / limit engine |
+| `src/lib/platform-admin/` | Phase 26G multi-tenant platform administration |
+| `src/lib/pwa/` | Phase 26H PWA / offline queue / share / push scaffolds |
+| `src/ai/` | Phase 27A AI Agent Platform kernel |
+| `src/lib/prospecting/` | Phase 27B AI Prospecting Agent |
+| `src/lib/sales-agent/` | Phase 27C AI Sales Agent |
+| `src/lib/customer-success/` | Phase 27F AI Customer Success Agent |
+| `src/lib/revenue-intelligence/` | Phase 27G AI Revenue Intelligence Agent |
+| `src/lib/orchestrator/` | Phase 27H AI Orchestrator & Multi-Agent Collaboration |
 | `src/lib/crm/` | CRM queries/actions + qualification / opportunities / executive |
 | `src/lib/ui/format.ts` | Shared display formatters |
 | `supabase/migrations/` | Manual additive SQL |
@@ -63,6 +90,28 @@ Auth + Organization (RLS)
 | `docs/FUNNEL-ACTIVATION.md` | Phase 20D funnel / campaign-ready docs |
 | `docs/AUTOMATED-EMAIL-ENGINE.md` | Email engine docs |
 | `docs/EMAIL-AI-ARCHITECTURE.md` | Phase 21K AI architecture |
+| `docs/company-intelligence.md` | Phase 25A AI company intelligence |
+| `docs/contact-intelligence.md` | Phase 25B AI contact intelligence |
+| `docs/advanced-sales-pipeline.md` | Phase 25C advanced CRM / sales pipeline |
+| `docs/ai-email-campaign-builder.md` | Phase 25D AI email campaign builder |
+| `docs/ai-lead-scoring.md` | Phase 25E AI lead scoring engine |
+| `docs/ai-sales-automation.md` | Phase 25F AI sales automation engine |
+| `docs/executive-analytics.md` | Phase 25G executive analytics dashboard |
+| `docs/ai-copilot.md` | Phase 25H AI Copilot |
+| `docs/integrations-marketplace.md` | Phase 25I Integrations Marketplace |
+| `docs/api-webhook-platform.md` | Phase 26B API & Webhook Platform |
+| `docs/white-label-platform.md` | Phase 26C White Label Platform |
+| `docs/team-collaboration.md` | Phase 26D Team Collaboration Platform |
+| `docs/enterprise-security-identity.md` | Phase 26E Enterprise Security & Identity |
+| `docs/billing-subscription.md` | Phase 26F Billing & Subscription Management |
+| `docs/platform-administration.md` | Phase 26G Multi-Tenant Administration Platform |
+| `docs/mobile-pwa.md` | Phase 26H Mobile Experience & PWA |
+| `docs/ai-agent-platform.md` | Phase 27A AI Agent Platform |
+| `docs/ai-prospecting.md` | Phase 27B AI Prospecting Agent |
+| `docs/ai-sales-agent.md` | Phase 27C AI Sales Agent |
+| `docs/ai-customer-success.md` | Phase 27F AI Customer Success Agent |
+| `docs/ai-revenue-intelligence.md` | Phase 27G AI Revenue Intelligence Agent |
+| `docs/ai-orchestrator.md` | Phase 27H AI Orchestrator & Multi-Agent Collaboration |
 
 ## Auth & security
 

@@ -15,6 +15,8 @@ export type FooterInjectionInput = {
   termsUrl: string | null;
   categoryLabel?: string | null;
   language?: string | null;
+  poweredByLabel?: string | null;
+  hidePoweredBy?: boolean;
 };
 
 export type FooterInjectionResult = {
@@ -72,6 +74,14 @@ export function injectCompliantFooter(
     lines.push(`${t(input.language, "category")}: ${input.categoryLabel}`);
   }
 
+  const poweredByText = input.hidePoweredBy
+    ? null
+    : input.poweredByLabel?.trim() || t(input.language, "poweredBy");
+
+  const poweredByHtml = poweredByText
+    ? `<p style="margin:12px 0 0 0;color:#9ca3af;">${escapeHtml(poweredByText)}</p>`
+    : "";
+
   const footerHtml = `
 <div ${FOOTER_MARKER}="1" style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.5;color:#6b7280;">
   <p style="margin:0 0 8px 0;">${lines.map((l) => escapeHtml(l)).join("<br/>")}</p>
@@ -90,7 +100,7 @@ export function injectCompliantFooter(
         : ""
     }
   </p>
-  <p style="margin:12px 0 0 0;color:#9ca3af;">${escapeHtml(t(input.language, "poweredBy"))}</p>
+  ${poweredByHtml}
 </div>`.trim();
 
   const footerText = [
@@ -103,7 +113,7 @@ export function injectCompliantFooter(
       ? `${t(input.language, "privacy")}: ${input.privacyPolicyUrl}`
       : null,
     input.termsUrl ? `${t(input.language, "terms")}: ${input.termsUrl}` : null,
-    t(input.language, "poweredBy"),
+    poweredByText,
   ]
     .filter(Boolean)
     .join("\n");

@@ -10,7 +10,12 @@ import {
   slugifyOrganizationName,
 } from "@/lib/organizations/get-active-organization";
 import { ensureDefaultCompanyCategories } from "@/lib/companies/categories/bootstrap";
+import {
+  recordLoginAttemptAction,
+  registerSessionAfterLoginAction,
+} from "@/lib/security/actions";
 import { createClient } from "@/lib/supabase/server";
+import { logSecurityAudit } from "@/lib/security/audit";
 
 const loginSchema = z.object({
   email: z.email("Voer een geldig e-mailadres in"),
@@ -47,20 +52,60 @@ export async function loginAction(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
 
-  if (error) {
+  if (error || !data.user) {
+    await recordLoginAttemptAction({
+      email: parsed.data.email,
+      success: false,
+      failureReason: error?.message ?? "invalid_credentials",
+    }).catch(() => undefined);
     return {
       success: false,
       message: "Inloggen mislukt. Controleer e-mailadres en wachtwoord.",
     };
   }
 
+  await recordLoginAttemptAction({
+    email: parsed.data.email,
+    success: true,
+    userId: data.user.id,
+  }).catch(() => undefined);
+
+  await registerSessionAfterLoginAction({
+    userId: data.user.id,
+    email: parsed.data.email,
+  }).catch(() => undefined);
+
   redirect("/dashboard");
 }
 
 export async function logoutAction(): Promise<void> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    try {
+      await supabase
+        .from("security_sessions")
+        .update({
+          revoked_at: new Date().toISOString(),
+          revoke_reason: "logout",
+          is_current: false,
+        })
+        .eq("user_id", user.id)
+        .eq("is_current", true)
+        .is("revoked_at", null);
+      await logSecurityAudit(supabase, {
+        actorUserId: user.id,
+        action: "logout",
+        description: "User logged out",
+      });
+    } catch {
+      /* best-effort */
+    }
+  }
   await supabase.auth.signOut();
   redirect("/login");
 }

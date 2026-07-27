@@ -55,6 +55,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Phase 21L — public email surfaces must not require a session.
+  // Phase 26H — offline fallback must be reachable without auth for SW cache.
   const isPublicEmailRoute =
     pathname.startsWith("/api/webhooks/email/") ||
     pathname.startsWith("/api/email/open/") ||
@@ -63,7 +64,11 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/api/internal/health") ||
     pathname.startsWith("/api/internal/email/") ||
     pathname.startsWith("/preferences/") ||
-    pathname.startsWith("/unsubscribe/");
+    pathname.startsWith("/unsubscribe/") ||
+    pathname === "/offline" ||
+    pathname.startsWith("/sw.js") ||
+    pathname.startsWith("/icons/") ||
+    pathname === "/manifest.webmanifest";
 
   if (!user && !isAuthRoute && !isPublicAsset && !isPublicEmailRoute) {
     const redirectUrl = request.nextUrl.clone();

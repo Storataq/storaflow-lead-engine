@@ -19,11 +19,13 @@ export default async function CrmPipelinesPage() {
   let pipelines: Awaited<ReturnType<typeof listPipelines>> = [];
   let errorMessage: string | null = null;
   try {
-    pipelines = await listPipelines(context.organization.id);
+    pipelines = await listPipelines(context.organization.id, {
+      includeArchived: true,
+    });
   } catch (error) {
     errorMessage = toUserFacingError(
       error,
-      "Kon pipelines niet laden. Voer migratie 000008 uit als tabellen ontbreken.",
+      "Kon pipelines niet laden. Voer migratie 000008/00028 uit als tabellen ontbreken.",
     );
   }
 
@@ -31,7 +33,7 @@ export default async function CrmPipelinesPage() {
     <div>
       <PageHeader
         title="Pipelines"
-        description="Meerdere pipelines per organisatie, zoals Sales, Onboarding, Partners en Support."
+        description="Sales, Enterprise, Partners, Renewals, Customer Success — create, edit and archive pipelines."
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
           { label: "CRM", href: "/crm" },
